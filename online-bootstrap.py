@@ -39,7 +39,7 @@ def onlineMeanVarBoot(xs,reps):
             if ns[i] > 0:
                 Rs[i] = deltas[i] * counts[i] / temp[i]
             else:
-                Rs[i]  = 0
+                Rs[i] = 0
         ms += Rs
         M2s += ns * deltas * Rs
         ns = temp
