@@ -54,3 +54,5 @@ test = rand(500)
 
 np.mean(test)
 np.var(test)
+
+testBoot = onLineMeanVarBoot(test,1000)
