@@ -15,7 +15,7 @@ def onlineMeanVar(xs):
         n += 1
         delta = x - m
         m += delta/n
-        M2 += delta**2
+        M2 += delta*(x-m)
 
     if n < 2:
         return (np.nan,np.nan)
@@ -35,17 +35,23 @@ def increment(x,reps,ns,ms):
     Rs = [d*c / t if n > 0 else 0 for n,c,t,d in zip(ns,counts,temp,deltas)]
     return (Rs,deltas,temp)
 
+def step(x,reps,current):
+    ns,ms,M2s = current
+    Rs,deltas,temp = increment(x,reps,ns,ms)
+    return (temp,ms+Rs,M2s+ns*deltas*Rs)
 
 def onlineMeanVarBoot(xs,reps):
     ns = np.zeros(reps,dtype=np.int)
     ms = np.zeros(reps)
     M2s = np.zeros(reps)
 
-    for x in xs:
-        Rs,deltas,temp = increment(x,reps,ns,ms)
-        ms += Rs
-        M2s += ns * deltas * Rs
-        ns = temp
+    ns,ms,M2s = reduce(lambda current,x: step(x,reps,current),xs,(ns,ms,M2s))
+
+    # for x in xs:
+    #     Rs,deltas,temp = increment(x,reps,ns,ms)
+    #     ms += Rs
+    #     M2s += ns * deltas * Rs
+    #     ns = temp
 
     if np.min(ns) < 2:
         return np.nan
@@ -56,6 +62,6 @@ def onlineMeanVarBoot(xs,reps):
 
 
 if __name__== "__main__":
-    test = rand(500)
+    test = rand(5000)
     testBoot = onlineMeanVarBoot(test,4000)
     print "numpy est: %s, boot est: %s" %(np.var(test),np.mean(testBoot))
