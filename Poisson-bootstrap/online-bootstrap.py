@@ -46,7 +46,7 @@ def onlineMeanVarBoot(xs,reps):
     M2s = np.zeros(reps)
 
     ns,ms,M2s = reduce(lambda current,x: step(x,reps,current),xs,(ns,ms,M2s))
-
+    # probably faster than the reduce version very slightly
     # for x in xs:
     #     Rs,deltas,temp = increment(x,reps,ns,ms)
     #     ms += Rs
