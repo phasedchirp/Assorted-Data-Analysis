@@ -27,7 +27,7 @@ onlineMeanVar xs = (m,m2/n)
                    where (n,m,m2) = est xs
 
 -- might have an efficiency tradeoff?
--- onlineMeanVar xs = onlineMeanVarWeighted xs [1.0 | _ <- [1..(length xs)]
+-- onlineMeanVar xs = onlineMeanVarWeighted xs (iterate (\_ -> 1) 1)
 
 estWeighted :: (Floating a) => [a] -> [a] -> (a,a,a)
 estWeighted [] []  = (0,0,0)

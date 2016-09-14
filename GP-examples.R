@@ -1,4 +1,4 @@
-library(ggplot2)
+library(ggplot2)  # what's this mean?
 testFrame = expand.grid(
   x1 = seq(-6,10,0.2),
   x2 = seq(-10,10,0.2)
