@@ -1,0 +1,100 @@
+---
+title: "Gaussian Process Models"
+author: "Sean Martin"
+date: "September 16, 2016"
+output: ioslides_presentation
+runtime: shiny
+---
+
+## A quick introduction to Gaussian Process models
+
+Some stuff
+
+## Motivation
+
+Why are we using these things?
+
+## Parametric Models
+
+Take linear models as a starting point. These model the data as
+
+## Basis Expansion
+
+Sometimes a linear function of the input isn't ideal. In this case, we can model non-linear functions of the data using basis expansion
+
+- Polynomial regression
+- Basis splines
+- Fourier Series
+
+##
+### Polynomial Regression
+
+##
+### Basis Splines
+
+##
+### Fourier Series
+
+## Kernel Regression
+
+More generally, 
+
+## Gaussian Processes
+
+##
+### 1-dimensional example:
+
+```{r, echo=FALSE}
+inputPanel(
+  selectInput("n_breaks", label = "Number of bins:",
+              choices = c(10, 20, 35, 50), selected = 20),
+  
+  sliderInput("bw_adjust", label = "Bandwidth adjustment:",
+              min = 0.2, max = 2, value = 1, step = 0.2)
+)
+
+renderPlot({
+  hist(faithful$eruptions, probability = TRUE, breaks = as.numeric(input$n_breaks),
+       xlab = "Duration (minutes)", main = "Geyser eruption duration")
+  
+  dens <- density(faithful$eruptions, adjust = input$bw_adjust)
+  lines(dens, col = "blue")
+})
+```
+
+
+##
+### 2-dimensional example:
+
+```{r, echo=FALSE}
+inputPanel(
+  selectInput("n_breaks", label = "Number of bins:",
+              choices = c(10, 20, 35, 50), selected = 20),
+  
+  sliderInput("bw_adjust", label = "Bandwidth adjustment:",
+              min = 0.2, max = 2, value = 1, step = 0.2)
+)
+
+renderPlot({
+  hist(faithful$eruptions, probability = TRUE, breaks = as.numeric(input$n_breaks),
+       xlab = "Duration (minutes)", main = "Geyser eruption duration")
+  
+  dens <- density(faithful$eruptions, adjust = input$bw_adjust)
+  lines(dens, col = "blue")
+})
+```
+
+
+##
+### Taking a break for some examples
+
+## Other cool stuff related to GPs
+
+##
+### GP-LVMs
+
+##
+### Classification
+
+##
+### Deep GPs
