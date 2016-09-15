@@ -6,6 +6,71 @@ output: ioslides_presentation
 runtime: shiny
 ---
 
+```{r,echo=FALSE,eval=TRUE}
+library(ggplot2)
+library(MASS)
+library(reshape2)
+
+l2 <- function(x) (x%*%x)[1,1]
+
+SE <- function(Xi,Xj, l=1, s=1) s*exp(-0.5 * l2(Xi - Xj) ^ 2 / l ^ 2)
+cov <- function(X, Y, l=1, s=1) outer(X, Y, SE, l, s)
+
+# not-very efficient plotting function:
+
+plotGP <- function(xRange,obs=c(),l,sigma,noise=0,samples=TRUE){
+  x_predict <- seq(xRange[1],xRange[2],length.out=100)
+  if(is.null(obs)){
+    COV <- cov(x_predict,x_predict,l,sigma)
+    values <- mvrnorm(3, rep(0, length=length(x_predict)), COV)
+    dat <- data.frame(x=x_predict, t(values))
+    dat <- melt(dat, id="x")
+    
+    ggplot(dat,aes(x=x,y=value)) +
+      geom_rect(xmin=-Inf, xmax=Inf, ymin=-2*sigma, ymax=2*sigma, fill="grey80") +
+      geom_line(aes(group=variable)) +   theme_bw() +
+      ylab("output, f(x)") + xlab("input, x") +
+      coord_cartesian(xlim=xRange,ylim =c(-3,3))
+  } else {
+    cov_xx_inv <- solve(cov(obs$x, obs$x,l,sigma) + noise^2 * diag(1, length(obs$x)))
+    Ef <- cov(x_predict, obs$x,l,sigma) %*% cov_xx_inv %*% obs$y
+    Cf <- cov(x_predict, x_predict,l,sigma) - cov(x_predict, obs$x,l,sigma)  %*% cov_xx_inv %*% cov(obs$x, x_predict,l,sigma)
+    # predictions in data frame
+    value <- mvrnorm(5, Ef, Cf)
+    dat <- data.frame(x=x_predict, t(value))
+    dat <- melt(dat, id="x")
+    # Actual plotting bits:
+    fakeData = data.frame(x=x_predict,y=Ef,lower=(Ef-2*sigma*sqrt(diag(Cf))),upper=(Ef+2*sigma*sqrt(diag(Cf))))
+    ggplot(dat,aes(x=x,y=value)) +
+      geom_ribbon(data=fakeData, aes(y=y,ymin=lower, ymax=upper), fill="grey80") +
+      geom_line(aes(group=variable,color=variable)) + #REPLICATES
+      geom_line(data=fakeData,aes(x=x,y=y), size=1) + #MEAN
+      geom_point(data=obs,aes(x=x,y=y),size=2,shape=21) +  #OBSERVED DATA
+      ylab("output, f(x)") + xlab("input, x") +
+      coord_cartesian(xlim=xRange,ylim =c(-5,5)) +
+      theme_bw()
+  }
+}
+
+
+plotGP_2d <- function(xRange,obs=c(),l,sigma,noise=0){
+  x_predict <- seq(xRange[1],xRange[2],length.out=100)
+  cov_xx_inv <- solve(cov(obs$x, obs$x,l,sigma) + noise^2 * diag(1, length(obs$x)))
+  Ef <- cov(x_predict, obs$x,l,sigma) %*% cov_xx_inv %*% obs$y
+  Cf <- cov(x_predict, x_predict,l,sigma) - cov(x_predict, obs$x,l,sigma)  %*% cov_xx_inv %*% cov(obs$x, x_predict,l,sigma)
+  # predictions in data frame
+  value <- mvrnorm(5, Ef, Cf)
+  dat <- data.frame(x=x_predict, t(value))
+  dat <- melt(dat, id="x")
+  # Actual plotting bits:
+  fakeData = data.frame(x=x_predict,y=Ef,lower=(Ef-2*sigma*sqrt(diag(Cf))),upper=(Ef+2*sigma*sqrt(diag(Cf))))
+  ggplot(dat,aes(x=x,y=y,color=value)) +
+    theme_bw()
+}
+
+
+```
+
 ## A quick introduction to Gaussian Process models
 
 Some stuff
@@ -16,50 +81,117 @@ Why are we using these things?
 
 ## Parametric Models
 
-Take linear models as a starting point. These model the data as
+Strategy: Model the data as the outputs of some parametric function, turning the learning problem into finding the parameters that best parameters given the data  where best is interpreted as maximizing some objective function or minimizing some loss function, or giving the posterior distribution $p(\theta | \mathcal{D})$ over parameters in the case of Bayesian inference.
 
-## Basis Expansion
+##
+### Linear models
 
-Sometimes a linear function of the input isn't ideal. In this case, we can model non-linear functions of the data using basis expansion
+Due to ease of training/the fact that they're pretty reasonable predictive models despite making an almost always bad assumption about functional form, linear models are a popular choice. These take the form
+
+$$ f(x) = $$
+
+where the weight vector $w$ is the parameter to be learned.
+
+##
+### Basis Expansion
+
+Sometimes a linear function of the input isn't ideal. In this case, we can model non-linear functions of the data using basis expansion. This takes the form
+
+$$ f(x) = $$
+
+which, while it's a non-linear function of the data, is linear in the parameters and so preserves the computational advantages of linear models. Some examples include:
 
 - Polynomial regression
-- Basis splines
-- Fourier Series
+- Radial Basis Functions
+- Periodic basis functions
 
 ##
 ### Polynomial Regression
 
-##
-### Basis Splines
+For polynomial regression, $\phi (x)$ is the set 
 
 ##
-### Fourier Series
+### Radial Basis Functions
+
+Radial basis functions 
+
+##
+### Periodic Basis Functions
+
+In some cases, it might be useful to consider a set of periodic basis functions, such as when trying to identify periodic trends in the data.
 
 ## Kernel Regression
 
-More generally, 
+But, in all of these cases, we're only considering a limited/finite-dimensional set of basis functions and the goal of inference is a finite set of parameters. More generally, for functions that can be written with inner products of , we can replace the inner products with a kernel function $k(x,x')$ which gives some sort of distance/similarity measure between pairs of observations. This approach lets us lift things into the infinite-dimensional space of continuous functions.
+
+Popular choices include
+
+This is also the approach used in the kernel trick for SVMs
 
 ## Gaussian Processes
 
-##
-### 1-dimensional example:
+Probability distribution over the space of functions:
 
-```{r, echo=FALSE}
+$$p(f|D) = $$
+
+##
+
+Alternatively, an infinite-dimensional generalization of the Gaussian distrubution, parameterized by a mean and covariance *functions*, giving the distribution
+
+$$f(x)\sim \mathcal{N}(m(x),K())$$
+
+Valid covariance functions is limited to ones that result in a positive definite covariance matrix for the observations.
+
+For any finite collection of observations, we can marginalize, resulting in a finite-dimensional gaussian distribution.
+
+## Defining Kernel Functions
+
+Some commonly used kernels
+
+MacKay (2003), ch. 45 also gives a cool method of defining valid kernels by specifying a function in the frequency domain and then taking the inverse Fourier transform.
+
+For examples below, sticking with the squared exponential kernel. This has the (hyper-) parameters $l$ and $\sigma$ which control the length-scale (how quickly similarity between points falls off).
+
+## Training/prediction
+
+
+Unfortunately, since this involves a matrix inversion, computational cost scales as $\mathcal{O}(N^3)$. However, there are faster approximations available (references at end).
+
+## 1-dimensional example:
+```{r, echo=FALSE, eval=TRUE}
+
 inputPanel(
-  selectInput("n_breaks", label = "Number of bins:",
-              choices = c(10, 20, 35, 50), selected = 20),
-  
-  sliderInput("bw_adjust", label = "Bandwidth adjustment:",
-              min = 0.2, max = 2, value = 1, step = 0.2)
+    sliderInput("l", label="length-scale:", min=0.1, max=5, value=2.5, step=0.1),
+    selectInput("obs",label="observations", choices = c(TRUE,FALSE)),
+    sliderInput("sigma",label="sigma",min=0.1,max=3,step=0.1,value=1)
 )
 
 renderPlot({
-  hist(faithful$eruptions, probability = TRUE, breaks = as.numeric(input$n_breaks),
-       xlab = "Duration (minutes)", main = "Geyser eruption duration")
-  
-  dens <- density(faithful$eruptions, adjust = input$bw_adjust)
-  lines(dens, col = "blue")
+  if(input$obs){
+    observations = data.frame(x = c(-4, -3, -1,  0,  2), y = c(-2,  0,  1,  2, 3))
+    plotGP(xRange = c(-5,5),obs=observations,l=input$l,sigma=input$sigma)
+  } else {
+    plotGP(xRange = c(-5,5),l=input$l,sigma=input$sigma)
+  }
 })
+```
+
+## 1-dimensional example with noise
+
+
+
+```{r, echo=FALSE, eval=TRUE}
+
+inputPanel(
+    sliderInput("l2", label="length-scale:", min=0.1, max=5, value=2.5, step=0.1),
+    sliderInput("sigma2",label="sigma",min=0.1,max=3,step=0.1,value=1),
+    sliderInput("noise",label="noise",min=0,max=3,value=0,step=0.1)
+)
+
+renderPlot({
+    observations = data.frame(x = c(-4, -3, -1,  0,  2), y = c(-2,  0,  1,  2, 3))
+    plotGP(xRange = c(-5,5),obs=observations,l=input$l2,sigma=input$sigma2,noise=input$noise)
+    })
 ```
 
 
@@ -86,12 +218,58 @@ renderPlot({
 
 
 ##
+### Non-isotropic kernels
+
+The previous example had a single length-scale parameter $l$ for all dimensions. Given different values $l_d$ for each input dimension, we get a gaussian process where the relavance of each dimension to the prediction can be varied independently. When the kernel parameters are being learned, this can be used for Automatic Relevance Determination (ARD) models.
+
+##
+
+```{r, echo=FALSE}
+inputPanel(
+  selectInput("n_breaks", label = "Number of bins:",
+              choices = c(10, 20, 35, 50), selected = 20),
+  
+  sliderInput("bw_adjust", label = "Bandwidth adjustment:",
+              min = 0.2, max = 2, value = 1, step = 0.2)
+)
+
+renderPlot({
+  hist(faithful$eruptions, probability = TRUE, breaks = as.numeric(input$n_breaks),
+       xlab = "Duration (minutes)", main = "Geyser eruption duration")
+  
+  dens <- density(faithful$eruptions, adjust = input$bw_adjust)
+  lines(dens, col = "blue")
+})
+```
+
+
+## Learning Kernel Parameters
+Choice of kernel parameters is pretty important, so generally we want to learn these from data. Approaches include:
+
+- Maximum Likelihood estimation (potential issues with local maxima)
+- Markov Chain Monte Carlo (MCMC) (slower)
+- Variational approximation
+
+
+##
 ### Taking a break for some examples
 
-## Other cool stuff related to GPs
+## Other cool stuff
+
+##
+### Approximate learning
+
+Learning for GPs can be computationally expensive or even intractable for sufficiently large data sets. A number of methods exist for more efficient inference have been proposed:
+
+- Sparse approximation using a set of basis vectors
+- 
+
+Some of these methods also extend to online learning for these models.
 
 ##
 ### GP-LVMs
+
+
 
 ##
 ### Classification
