@@ -92,7 +92,7 @@ where the weight vector $w$ is the parameter to be learned. Observations are the
 
 $$y = x^Tw + \epsilon$$ 
 
-where $\epsilon$ is $\mathcal{N}(0,1)$ noise).
+where $\epsilon$ is $\mathcal{N}(0,\sigma)$ noise).
 
 ## Linear fit
 
