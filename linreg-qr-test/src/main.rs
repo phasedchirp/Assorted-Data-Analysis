@@ -5,8 +5,9 @@ extern crate rand;
 // use rulinalg::matrix::Matrix;
 // use rulinalg::vector::Vector;
 
-use rusty_machine::linalg::Matrix;
-use rusty_machine::linalg::Vector;
+use rusty_machine::linalg::{Matrix,Vector,Metric};
+// use rusty_machine::linalg::Vector;
+// use rusty_machine::linalg::norm::Euclidean;
 use rusty_machine::learning::SupModel;
 use rusty_machine::learning::lin_reg::LinRegressor;
 // use libnum::abs;
@@ -38,9 +39,19 @@ fn perturb_vector<R: Rng>(v: &Vector<f64>, r: &mut R, lim: f64) -> Vector<f64> {
     u
 }
 
+fn perturb_matrix<R: Rng>(a: &Matrix<f64>, r: &mut R, lim: f64) -> Matrix<f64> {
+    let mut b = a.clone();
+    let noise = Range::new(-lim, lim);
+    for x in b.mut_data() {
+        *x += noise.ind_sample(r);
+    }
+    b
+}
+
 
 
 fn main() {
+    let n = 1000;
     let mut rng = rand::thread_rng();
     let (data,target) = generate_data();
     // let test = perturb_vector(target.clone(),&mut rng, 0.5);
@@ -51,13 +62,19 @@ fn main() {
     let params_ref_qr = lin_mod.parameters().unwrap().to_owned();
     // repeatedly fit models on perturbed data to examine stability
     // uniform between -lim and lim
-    for _ in 0..5 {
-        let perturbed = perturb_vector(&target,&mut rng,0.5);
-        lin_mod.train(&data,&perturbed).unwrap();
+    let mut results_def = Vec::new();
+    let mut results_qr = Vec::new();
+    for _ in 0..n {
+        let perturbed = perturb_matrix(&data,&mut rng,1.0);
+        lin_mod.train(&perturbed,&target).unwrap();
         let params_temp = lin_mod.parameters().unwrap().to_owned();
-        println!("{:?}",params_temp - &params_ref);
-        lin_mod.train_with_qr(&data,&perturbed).unwrap();
+        results_def.push((params_temp - &params_ref).norm());
+        lin_mod.train_with_qr(&perturbed,&target).unwrap();
         let params_temp_qr = lin_mod.parameters().unwrap().to_owned();
-        println!("{:?}",params_temp_qr - &params_ref_qr);
+        results_qr.push((params_temp_qr - &params_ref_qr).norm());
     }
+    let ave_def = results_def.iter().fold(0.0, |a, x| a + x) /(n as f64) ;
+    let ave_qr = results_qr.iter().fold(0.0, |a, x| a + x) /(n as f64) ;
+    println!("Average diff for default method: {}",ave_def);
+    println!("Average diff for QR method:      {}",ave_qr);
 }
