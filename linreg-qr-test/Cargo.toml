@@ -1,0 +1,9 @@
+[package]
+name = "linreg-qr-test"
+version = "0.1.0"
+authors = ["chirp"]
+
+[dependencies]
+rusty-machine = {git = "https://github.com/phasedchirp/rusty-machine",branch ="lin_reg-qr"}
+rulinalg = "0.4.1"
+rand = "0.3.15"
