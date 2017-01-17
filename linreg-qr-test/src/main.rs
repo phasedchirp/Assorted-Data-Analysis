@@ -27,7 +27,7 @@ fn perturb_matrix<R: Rng>(a: &Matrix<f64>, r: &mut R, lim: f64) -> Matrix<f64> {
 fn main() {
     let n = 10000;
     let mut rng = rand::thread_rng();
-    let (data,target) = near_singular_data();
+    let (data,target) = generate_data();
     let (data_s,target_s) = near_singular_data();
 
     let mut lin_mod = LinRegressor::default();
