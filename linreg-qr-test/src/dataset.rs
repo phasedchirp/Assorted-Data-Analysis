@@ -8,3 +8,9 @@ pub fn generate_data() -> (Matrix<f64>, Vector<f64>) {
 
     (data,target)
 }
+
+pub fn near_singular_data() -> (Matrix<f64>, Vector<f64>){
+    let data = Matrix::new(3, 2, vec![1.0, 2.00001, 1.0, 2.0, 1.001, 2.0]);
+    let target = Vector::new(vec![1.0, 1.0, 1.0]);
+    (data,target)
+}
