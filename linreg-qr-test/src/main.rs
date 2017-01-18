@@ -25,57 +25,91 @@ fn perturb_matrix<R: Rng>(a: &Matrix<f64>, r: &mut R, lim: f64) -> Matrix<f64> {
 
 
 fn main() {
-    let n = 10000;
+    let n = 1000;
     let mut rng = rand::thread_rng();
     let (data,target) = generate_data();
     let (data_s,target_s) = near_singular_data();
+    let (data_c,target_c) = collinear_data();
+
 
     let mut lin_mod = LinRegressor::default();
     lin_mod.train(&data,&target).unwrap();
     let params_ref = lin_mod.parameters().unwrap().to_owned();
+
     lin_mod.train(&data_s,&target_s).unwrap();
     let params_ref_s = lin_mod.parameters().unwrap().to_owned();
 
+    lin_mod.train(&data_c,&target_c).unwrap();
+    let params_ref_c = lin_mod.parameters().unwrap().to_owned();
+
     lin_mod.train_with_qr(&data,&target).unwrap();
     let params_ref_qr = lin_mod.parameters().unwrap().to_owned();
+
     lin_mod.train_with_qr(&data_s,&target_s).unwrap();
     let params_ref_qr_s = lin_mod.parameters().unwrap().to_owned();
+
+    lin_mod.train_with_qr(&data_c,&target_c).unwrap();
+    let params_ref_qr_c = lin_mod.parameters().unwrap().to_owned();
 
 
     // repeatedly fit models on perturbed data to examine stability
     // uniform between -lim and lim
     let mut results_def = Vec::new();
     let mut results_def_s = Vec::new();
+    let mut results_def_c = Vec::new();
+
     let mut results_qr = Vec::new();
     let mut results_qr_s = Vec::new();
+    let mut results_qr_c = Vec::new();
     for _ in 0..n {
         let perturbed = perturb_matrix(&data,&mut rng,0.01);
         let perturbed_s = perturb_matrix(&data_s,&mut rng,0.01);
+        let perturbed_c = perturb_matrix(&data_c,&mut rng,0.01);
 
         lin_mod.train(&perturbed,&target).unwrap();
         let params_temp = lin_mod.parameters().unwrap().to_owned();
         results_def.push((params_temp - &params_ref).norm());
-
-        lin_mod.train(&perturbed_s,&target_s).unwrap();
-        let params_temp_s = lin_mod.parameters().unwrap().to_owned();
-        results_def_s.push((params_temp_s - &params_ref_s).norm());
-
         lin_mod.train_with_qr(&perturbed,&target).unwrap();
         let params_temp_qr = lin_mod.parameters().unwrap().to_owned();
         results_qr.push((params_temp_qr - &params_ref_qr).norm());
 
+        lin_mod.train(&perturbed_s,&target_s).unwrap();
+        let params_temp_s = lin_mod.parameters().unwrap().to_owned();
+        results_def_s.push((params_temp_s - &params_ref_s).norm());
         lin_mod.train_with_qr(&perturbed_s,&target_s).unwrap();
         let params_temp_qr_s = lin_mod.parameters().unwrap().to_owned();
         results_qr_s.push((params_temp_qr_s - &params_ref_qr_s).norm());
+
+        lin_mod.train(&perturbed_c,&target_c).unwrap();
+        let params_temp_c = lin_mod.parameters().unwrap().to_owned();
+        results_def_c.push((params_temp_c - &params_ref_c).norm());
+        lin_mod.train_with_qr(&perturbed_c,&target_c).unwrap();
+        let params_temp_qr_c = lin_mod.parameters().unwrap().to_owned();
+        results_qr_c.push((params_temp_qr_c - &params_ref_qr_c).norm());
     }
-    let ave_def = results_def.iter().fold(0.0, |a, x| a + x) /(n as f64) ;
-    let ave_qr = results_qr.iter().fold(0.0, |a, x| a + x) /(n as f64) ;
-    let ave_def_s = results_def_s.iter().fold(0.0, |a, x| a + x) /(n as f64) ;
-    let ave_qr_s = results_qr_s.iter().fold(0.0, |a, x| a + x) /(n as f64) ;
+
+    let def = Vector::new(results_def);
+    let qr = Vector::new(results_qr);
+    let def_s = Vector::new(results_def_s);
+    let qr_s = Vector::new(results_qr_s);
+    let def_c = Vector::new(results_def_c);
+    let qr_c = Vector::new(results_qr_c);
+
     println!("Performance on realistic data:");
-    println!("Average diff for default method: {}",ave_def);
-    println!("Average diff for QR method:      {}",ave_qr);
+    println!("Average diff for default method:       {}",def.mean());
+    println!("Standard Deviation for default method: {}",def.variance().sqrt());
+    println!("Average diff for QR method:            {}",qr.mean());
+    println!("Standard Deviation for QR method:      {}\n",qr.variance().sqrt());
+
     println!("Performance when matrix is nearly singular:");
-    println!("Average diff for default method: {}",ave_def_s);
-    println!("Average diff for QR method:      {}",ave_qr_s);
+    println!("Average diff for default method:       {}",def_s.mean());
+    println!("Standard Deviation for default method: {}",def_s.variance().sqrt());
+    println!("Average diff for QR method:            {}",qr_s.mean());
+    println!("Standard Deviation for QR method:      {}\n",qr_s.variance().sqrt());
+
+    println!("Slightly more realistic data with collinearity problems:");
+    println!("Average diff for default method:       {}",def_c.mean());
+    println!("Standard Deviation for default method: {}",def_c.variance().sqrt());
+    println!("Average diff for QR method:            {}",qr_c.mean());
+    println!("Standard Deviation for QR method:      {}",qr_c.variance().sqrt());
 }
