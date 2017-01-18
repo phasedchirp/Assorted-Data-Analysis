@@ -22,6 +22,31 @@ fn perturb_matrix<R: Rng>(a: &Matrix<f64>, r: &mut R, lim: f64) -> Matrix<f64> {
     Matrix::new(a.rows(),a.cols(),vals)
 }
 
+// not wrapping the whole sim step in this so that each perturbed data set is seen by both versions.
+fn simulate(p:&Vector<f64>, d: &Matrix<f64>, t: &Vector<f64>, res: &mut Vec<f64>,m: &str) {
+    let mut lin_mod = LinRegressor::default();
+    if m == "default" {
+        lin_mod.train(d,t).unwrap();
+    } else  if m == "qr" {
+        lin_mod.train_with_qr(d,t).unwrap();
+    }
+
+    let params = lin_mod.parameters().unwrap();
+    res.push((params - p).norm());
+}
+
+// fn simulate_pred(p:&Vector<f64>, d: &Matrix<f64>, t: &Vector<f64>, res: &mut Vec<f64>,m: &str) {
+//     let mut lin_mod = LinRegressor::default();
+//     if m == "default" {
+//         lin_mod.train(d,t).unwrap();
+//     } else  if m == "qr" {
+//         lin_mod.train_with_qr(d,t).unwrap();
+//     }
+//
+//     let preds = lin_mod.predict(&d).unwrap();
+//     res.push((preds - p).norm());
+// }
+
 
 
 fn main() {
@@ -30,7 +55,6 @@ fn main() {
     let (data,target) = generate_data();
     let (data_s,target_s) = near_singular_data();
     let (data_c,target_c) = collinear_data();
-
 
     let mut lin_mod = LinRegressor::default();
     lin_mod.train(&data,&target).unwrap();
@@ -51,9 +75,6 @@ fn main() {
     lin_mod.train_with_qr(&data_c,&target_c).unwrap();
     let params_ref_qr_c = lin_mod.parameters().unwrap().to_owned();
 
-
-    // repeatedly fit models on perturbed data to examine stability
-    // uniform between -lim and lim
     let mut results_def = Vec::new();
     let mut results_def_s = Vec::new();
     let mut results_def_c = Vec::new();
@@ -61,31 +82,22 @@ fn main() {
     let mut results_qr = Vec::new();
     let mut results_qr_s = Vec::new();
     let mut results_qr_c = Vec::new();
+
     for _ in 0..n {
-        let perturbed = perturb_matrix(&data,&mut rng,0.01);
-        let perturbed_s = perturb_matrix(&data_s,&mut rng,0.01);
-        let perturbed_c = perturb_matrix(&data_c,&mut rng,0.01);
+        // noise uniform between -lim and lim
+        let lim = 0.0001;
+        let perturbed = perturb_matrix(&data,&mut rng,lim);
+        let perturbed_s = perturb_matrix(&data_s,&mut rng,lim);
+        let perturbed_c = perturb_matrix(&data_c,&mut rng,lim);
 
-        lin_mod.train(&perturbed,&target).unwrap();
-        let params_temp = lin_mod.parameters().unwrap().to_owned();
-        results_def.push((params_temp - &params_ref).norm());
-        lin_mod.train_with_qr(&perturbed,&target).unwrap();
-        let params_temp_qr = lin_mod.parameters().unwrap().to_owned();
-        results_qr.push((params_temp_qr - &params_ref_qr).norm());
+        simulate(&params_ref,&perturbed,&target,&mut results_def,"default");
+        simulate(&params_ref_qr,&perturbed,&target,&mut results_qr,"qr");
 
-        lin_mod.train(&perturbed_s,&target_s).unwrap();
-        let params_temp_s = lin_mod.parameters().unwrap().to_owned();
-        results_def_s.push((params_temp_s - &params_ref_s).norm());
-        lin_mod.train_with_qr(&perturbed_s,&target_s).unwrap();
-        let params_temp_qr_s = lin_mod.parameters().unwrap().to_owned();
-        results_qr_s.push((params_temp_qr_s - &params_ref_qr_s).norm());
+        simulate(&params_ref_s,&perturbed_s,&target_s,&mut results_def_s,"default");
+        simulate(&params_ref_qr_s,&perturbed_s,&target_s,&mut results_qr_s,"qr");
 
-        lin_mod.train(&perturbed_c,&target_c).unwrap();
-        let params_temp_c = lin_mod.parameters().unwrap().to_owned();
-        results_def_c.push((params_temp_c - &params_ref_c).norm());
-        lin_mod.train_with_qr(&perturbed_c,&target_c).unwrap();
-        let params_temp_qr_c = lin_mod.parameters().unwrap().to_owned();
-        results_qr_c.push((params_temp_qr_c - &params_ref_qr_c).norm());
+        simulate(&params_ref_c,&perturbed_c,&target_c,&mut results_def_c,"default");
+        simulate(&params_ref_qr_c,&perturbed_c,&target_c,&mut results_qr_c,"qr");
     }
 
     let def = Vector::new(results_def);
