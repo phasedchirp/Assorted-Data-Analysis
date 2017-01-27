@@ -1,0 +1,7 @@
+[package]
+name = "thinkDSP"
+version = "0.1.0"
+authors = ["chirp"]
+
+[dependencies]
+statrs = "0.4.0"
