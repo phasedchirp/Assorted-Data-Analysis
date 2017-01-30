@@ -4,7 +4,7 @@ use std::f64::EPSILON;
 
 
 // Sinc function (maybe a bit unstable):
-fn sinc(x: f64) -> f64 {
+pub fn sinc(x: f64) -> f64 {
     if x.abs() <  EPSILON.sqrt() {
         1.0
     } else {
@@ -73,16 +73,46 @@ impl Sinusoid for Sinc {
     }
 }
 
-// Sum of Sine waves:
-pub struct SumSines {
-    components: Vec<Sine>
+
+// trying an alternative approach:
+pub struct Periodic {
+    freq: Vec<f64>,
+    amp: Vec<f64>,
+    offset: Vec<f64>,
+    funcs: Vec<fn(p: f64) -> f64>
 }
 
-impl SumSines {
-    pub fn new(s: &Vec<Sine>) -> SumSines {
-        SumSines{components: s.clone()}
+impl Periodic {
+    pub fn new(freqs: Vec<f64>, amps: Vec<f64>, offsets: Vec<f64>, fs: Vec<fn(p: f64) -> f64>) -> Periodic {
+        Periodic{freq: freqs, amp: amps, offset: offsets, funcs: fs}
+    }
+
+    pub fn eval_pt(&self, t: f64) -> f64 {
+        let mut ft = 0.0;
+        for i in 0..self.freq.len(){
+            ft += self.amp[i]*self.funcs[i](2.0*PI*self.freq[i]*t+self.offset[i]);
+        }
+        ft
+    }
+    pub fn evaluate(&self, ts: &Vec<f64>) -> Vec<f64> {
+        ts.iter().map(|t| self.eval_pt(*t)).collect()
     }
 }
+
+
+
+
+
+// // Sum of Sine waves:
+// pub struct SumSines {
+//     components: Vec<Sine>
+// }
+//
+// impl SumSines {
+//     pub fn new(s: &Vec<Sine>) -> SumSines {
+//         SumSines{components: s.clone()}
+//     }
+// }
 
 // impl Sinusoid for SumSines {
 //     // this version only accurate for harmonic complexes:
