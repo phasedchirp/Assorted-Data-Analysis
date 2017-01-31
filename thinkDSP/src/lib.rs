@@ -1,5 +1,6 @@
 use std::f64::consts::{PI};
 use std::f64::EPSILON;
+use std::ops::{Add};
 
 
 
@@ -12,7 +13,13 @@ pub fn sinc(x: f64) -> f64 {
     }
 }
 
+pub fn sin(x: f64) -> f64 {
+    x.sin()
+}
 
+pub fn cos(x: f64) -> f64 {
+    x.cos()
+}
 
 
 pub trait Sinusoid {
@@ -75,6 +82,7 @@ impl Sinusoid for Sinc {
 
 
 // trying an alternative approach:
+#[derive(Clone)]
 pub struct Periodic {
     freq: Vec<f64>,
     amp: Vec<f64>,
@@ -83,6 +91,11 @@ pub struct Periodic {
 }
 
 impl Periodic {
+    // make simple signals with less typing:
+    pub fn simple(freq: f64, amp: f64, offset: f64, f: fn(p: f64) -> f64) -> Periodic {
+        Periodic{freq: vec![freq], amp: vec![amp], offset: vec![offset], funcs: vec![f]}
+    }
+
     pub fn new(freqs: Vec<f64>, amps: Vec<f64>, offsets: Vec<f64>, fs: Vec<fn(p: f64) -> f64>) -> Periodic {
         Periodic{freq: freqs, amp: amps, offset: offsets, funcs: fs}
     }
@@ -99,6 +112,18 @@ impl Periodic {
     }
 }
 
+impl Add for Periodic {
+    type Output = Periodic;
+
+    fn add(self, other: Periodic) -> Periodic {
+        let mut output = self.clone();
+        output.freq.append(&mut other.freq.clone());
+        output.amp.append(&mut other.amp.clone());
+        output.offset.append(&mut other.offset.clone());
+        output.funcs.append(&mut other.funcs.clone());
+        output
+    }
+}
 
 
 
