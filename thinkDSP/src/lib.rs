@@ -1,6 +1,6 @@
 use std::f64::consts::{PI};
 use std::f64::EPSILON;
-use std::ops::{Add};
+use std::ops::{Add, Sub};
 
 
 
@@ -119,6 +119,19 @@ impl Add for Periodic {
         let mut output = self.clone();
         output.freq.append(&mut other.freq.clone());
         output.amp.append(&mut other.amp.clone());
+        output.offset.append(&mut other.offset.clone());
+        output.funcs.append(&mut other.funcs.clone());
+        output
+    }
+}
+
+impl Sub for Periodic {
+    type Output = Periodic;
+
+    fn sub(self, other: Periodic) -> Periodic {
+        let mut output = self.clone();
+        output.freq.append(&mut other.freq.clone());
+        output.amp.append(&mut other.amp.clone().iter().map(|s| -s).collect());
         output.offset.append(&mut other.offset.clone());
         output.funcs.append(&mut other.funcs.clone());
         output

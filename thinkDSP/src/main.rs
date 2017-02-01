@@ -16,6 +16,8 @@ fn main() {
     println!("{:?}",signal_1.evaluate(&times));
     println!("{:?}",signal_2.evaluate(&times));
     let sum_of_signals = signal_1 + signal_2;
+    let dif_of_signals = Periodic::simple(1.0, 2.0, 0.0,sin) - Periodic::simple(1.0, 2.0, 0.0,sin);
     println!("{:?}", sum_of_signals.evaluate(&times));
     println!("{:?}",signal_3.evaluate(&times));
+    println!("{:?}", dif_of_signals.evaluate(&times));
 }
