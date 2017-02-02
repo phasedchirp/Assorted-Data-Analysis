@@ -22,63 +22,11 @@ pub fn cos(x: f64) -> f64 {
 }
 
 
-pub trait Sinusoid {
-    fn period(&self) -> f64;
+pub trait PeriodicSignal {
+    // fn period(&self) -> f64; // Need to work out good general implementation
     fn evaluate(&self, ts: &Vec<f64>) -> Vec<f64>;
 }
 
-
-// Sine wave
-#[derive(Clone)]
-pub struct Sine {
-    freq: f64,
-    amp: f64,
-    offset: f64
-}
-
-impl Sine {
-    pub fn new(f: f64, a: f64, o: f64) -> Sine {
-        Sine{freq: f, amp: a, offset: o}
-    }
-}
-
-impl Sinusoid for Sine {
-    fn period(&self) -> f64 {
-        1.0/self.freq
-    }
-
-    fn evaluate(&self,ts: &Vec<f64>) -> Vec<f64> {
-        let phases = ts.iter().map(|t| 2.0*PI*self.freq*t+self.offset);
-        phases.map(|p| self.amp * p.sin()).collect::<Vec<f64>>()
-    }
-
-}
-
-
-// Sinc wave:
-#[derive(Clone)]
-pub struct Sinc {
-    freq: f64,
-    amp: f64,
-    offset: f64
-}
-
-impl Sinc {
-    pub fn new(f: f64, a: f64, o: f64) -> Sinc {
-        Sinc{freq: f, amp: a, offset: o}
-    }
-}
-
-impl Sinusoid for Sinc {
-    fn period(&self) -> f64 {
-        1.0/self.freq
-    }
-
-    fn evaluate(&self,ts: &Vec<f64>) -> Vec<f64> {
-        let phases = ts.iter().map(|t| 2.0*PI*self.freq*t+self.offset);
-        phases.map(|p| self.amp * sinc(p)).collect::<Vec<f64>>()
-    }
-}
 
 
 // trying an alternative approach:
@@ -100,14 +48,17 @@ impl Periodic {
         Periodic{freq: freqs, amp: amps, offset: offsets, funcs: fs}
     }
 
-    pub fn eval_pt(&self, t: f64) -> f64 {
+    fn eval_pt(&self, t: f64) -> f64 {
         let mut ft = 0.0;
         for i in 0..self.freq.len(){
             ft += self.amp[i]*self.funcs[i](2.0*PI*self.freq[i]*t+self.offset[i]);
         }
         ft
     }
-    pub fn evaluate(&self, ts: &Vec<f64>) -> Vec<f64> {
+}
+
+impl PeriodicSignal for Periodic {
+    fn evaluate(&self, ts: &Vec<f64>) -> Vec<f64> {
         ts.iter().map(|t| self.eval_pt(*t)).collect()
     }
 }
