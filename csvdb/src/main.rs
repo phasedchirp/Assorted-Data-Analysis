@@ -1,4 +1,6 @@
 use std::io::{self, Read, Write, ErrorKind};
+use std::fs::{File,OpenOptions};
+use std::env::args;
 
 fn copy<R: ?Sized, W: ?Sized>(reader: &mut R, writer: &mut W) -> io::Result<u64>
     where R: Read, W: Write
@@ -18,5 +20,9 @@ fn copy<R: ?Sized, W: ?Sized>(reader: &mut R, writer: &mut W) -> io::Result<u64>
 }
 
 fn main() {
-    println!("Hello, world!");
+    let args : Vec<String> = args().collect();
+    let mut f_in = File::open(&args[1]).expect("couldn't open input file");
+    let mut f_out = OpenOptions::new().write(true).create_new(true).open(&args[2]).expect("couldn't open output file");
+    let bytes = copy(&mut f_in, &mut f_out);
+    println!("Copied {:?} bytes?",bytes);
 }
