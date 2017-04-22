@@ -1,7 +1,8 @@
-use std::io::{self, Read, Write, ErrorKind};
+use std::io::{self, Read, Write, ErrorKind,BufReader,BufRead};
 use std::fs::{File,OpenOptions};
 use std::env::args;
 
+// function for copying contents of reader to writer
 fn copy<R: ?Sized, W: ?Sized>(reader: &mut R, writer: &mut W) -> io::Result<u64>
     where R: Read, W: Write
     {
@@ -19,10 +20,19 @@ fn copy<R: ?Sized, W: ?Sized>(reader: &mut R, writer: &mut W) -> io::Result<u64>
         }
 }
 
+// eventually function to convert csv lines to SQL insert statements
+fn lines_to_queries<R: BufRead>(f: &mut R) -> () {
+    for line in f.lines() {
+        println!("{:?}", line);
+    }
+}
+
 fn main() {
     let args : Vec<String> = args().collect();
     let mut f_in = File::open(&args[1]).expect("couldn't open input file");
     let mut f_out = OpenOptions::new().write(true).create_new(true).open(&args[2]).expect("couldn't open output file");
     let bytes = copy(&mut f_in, &mut f_out);
+    let mut b_in = BufReader::new(File::open(&args[1]).unwrap());
+    lines_to_queries(&mut b_in);
     println!("Copied {:?} bytes?",bytes);
 }
