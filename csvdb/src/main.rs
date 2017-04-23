@@ -1,3 +1,7 @@
+extern crate toml;
+
+use toml::Value;
+
 use std::io::{self, Read, Write, ErrorKind,BufReader,BufRead};
 use std::fs::{File,OpenOptions};
 use std::env::args;
@@ -29,6 +33,16 @@ fn lines_to_queries<R: BufRead>(f: &mut R) -> () {
 
 fn main() {
     let args : Vec<String> = args().collect();
+    let mut c_string = String::new();
+    if args.len() > 3 {
+        let mut cfg = File::open(&args[3]).expect("couldn't open config file");
+        cfg.read_to_string(&mut c_string).unwrap();
+    }
+
+    let config = c_string.parse::<Value>().unwrap();
+
+    println!("{:?}",config["placeholder"].as_str());
+
     let mut f_in = File::open(&args[1]).expect("couldn't open input file");
     let mut f_out = OpenOptions::new().write(true).create_new(true).open(&args[2]).expect("couldn't open output file");
     let bytes = copy(&mut f_in, &mut f_out);
