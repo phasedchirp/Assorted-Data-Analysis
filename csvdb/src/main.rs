@@ -1,10 +1,41 @@
+#[macro_use]
+extern crate serde_derive;
 extern crate toml;
+extern crate rusqlite;
 
-use toml::Value;
+use toml::{Value,from_str};
+
+use rusqlite::Connection;
 
 use std::io::{self, Read, Write, ErrorKind,BufReader,BufRead};
 use std::fs::{File,OpenOptions};
 use std::env::args;
+use std::collections::HashMap;
+
+
+#[derive(Debug,Deserialize)]
+struct Config {
+    dir: bool,
+    in_path: String,
+    out_path: String,
+    types: HashMap<String,String>
+}
+
+struct Schema {
+    cols: HashMap<String,String>
+}
+
+impl Schema {
+    fn new(columns: String) -> Schema {
+        let mut col = HashMap::new();
+        for c in columns.split(",") {
+            col.insert("blah".to_string(),"blah".to_string());
+        }
+        Schema{cols: col}
+    }
+    // fn to_query()
+}
+
 
 // function for copying contents of reader to writer
 fn copy<R: ?Sized, W: ?Sized>(reader: &mut R, writer: &mut W) -> io::Result<u64>
@@ -24,6 +55,9 @@ fn copy<R: ?Sized, W: ?Sized>(reader: &mut R, writer: &mut W) -> io::Result<u64>
         }
 }
 
+// split line into
+// fn line_to_record()
+
 // eventually function to convert csv lines to SQL insert statements
 fn lines_to_queries<R: BufRead>(f: &mut R) -> () {
     for line in f.lines() {
@@ -39,9 +73,9 @@ fn main() {
         cfg.read_to_string(&mut c_string).unwrap();
     }
 
-    let config = c_string.parse::<Value>().unwrap();
+    let config: Config = from_str(&c_string).unwrap();
 
-    println!("{:?}",config["placeholder"].as_str());
+    println!("{:?}",config);
 
     let mut f_in = File::open(&args[1]).expect("couldn't open input file");
     let mut f_out = OpenOptions::new().write(true).create_new(true).open(&args[2]).expect("couldn't open output file");

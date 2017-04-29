@@ -1,0 +1,7 @@
+dir = true
+in_path = "blah"
+out_path = "blah"
+
+[types]
+foo = "bar"
+baz = "buzz"
