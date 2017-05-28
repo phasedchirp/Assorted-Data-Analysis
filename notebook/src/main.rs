@@ -3,18 +3,13 @@ extern crate time;
 use std::io::{Write,stdin};
 use std::fs::{OpenOptions,read_dir};
 use std::env::args;
-// use std::time::{SystemTime};
 use time::now_utc;
 
 fn write_new(journal_dir: &str) {
     let mut inputs = String::new();
     let timestamp = now_utc();
     println!("{}", timestamp.ctime());
-    // let mut journal_dir = String::new();
-    // println!("Specify a journal directory:");
-    // stdin().read_line(&mut journal_dir).unwrap();
-
-    println!("");
+    println!("------------------------");
 
     let mut entry_file = OpenOptions::new().
                         create_new(true).
