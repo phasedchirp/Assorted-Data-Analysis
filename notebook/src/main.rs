@@ -44,17 +44,18 @@ fn write_new(journal_dir: &str) {
 
 fn list_entries(journal_dir: &str) {
     println!("The following entries exist:");
-    let es = read_dir(journal_dir);
+    let es = read_dir(journal_dir).unwrap();
     for e in es {
-        println!("{:?}", e);
+        println!("{:?}", e.unwrap().path());
     }
 }
 
 fn main() {
-    if let Some(s) = args().nth(1) {
+    let mut inputs = args();
+    if let Some(s) = inputs.nth(1) {
         match &*s {
-            "--new" => write_new(&args().nth(0).unwrap()),
-            "--list" => list_entries(&args().nth(0).unwrap()),
+            "--new" => write_new(&inputs.nth(0).unwrap().trim()),
+            "--list" => list_entries(&inputs.nth(0).unwrap().trim()),
             _ => println!("Please specify a valid mode.\nThese include:\n--new\n--list")
         }
     }
