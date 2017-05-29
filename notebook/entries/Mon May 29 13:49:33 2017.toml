@@ -1,0 +1,3 @@
+timestamp = "Mon May 29 13:49:33 2017"
+tags = ["testing", "nonsense", "lorem ipsum\n"]
+content = "This is the first line of an entry.\nHere's another line to go with that one.\nI think that's probably enough to work with for now?\n"
