@@ -4,10 +4,33 @@ extern crate toml;
 
 extern crate time;
 
-use std::io::{Write,stdin};
+use std::io::{Read,Write,stdin};
 use std::fs::{OpenOptions,read_dir};
 use std::env::args;
+use std::collections::{HashMap,HashSet};
+
 use time::now_utc;
+
+#[derive(Debug,Serialize,Deserialize)]
+struct Index {
+    tags: HashMap<String,HashSet<String>>,
+    words: HashMap<String,HashSet<String>>,
+}
+
+impl Index {
+    fn from_file(path: &str) -> Index {
+        let mut ind_file = OpenOptions::new().
+                           create_new(true).
+                           read(true).
+                           write(true).
+                           open(path).
+                           unwrap();
+        let mut ind_str = String::new();
+        ind_file.read_to_string(&mut ind_str).unwrap();
+
+        toml::from_str(&ind_str).unwrap()
+    }
+}
 
 #[derive(Debug,Serialize)]
 struct Entry {
@@ -57,6 +80,12 @@ fn write_new(journal_dir: &str) {
     match stdin().read_line(&mut tags) {
         Ok(_) => (),
         Err(e) => println!("{:?}", e)
+    }
+
+    let mut index = Index::from_file(&format!("{}/{}.toml",journal_dir.trim(),timestamp));
+    for tag in tags.split(',') {
+        let tagged = index.tags.entry(tag.to_string()).or_insert(HashSet::new());
+        (*tagged).insert(timestamp.clone());
     }
 
     let entry = Entry::new(timestamp,tags, inputs);
