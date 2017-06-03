@@ -13,6 +13,7 @@ use time::now_utc;
 
 #[derive(Debug,Serialize,Deserialize)]
 struct Index {
+    // both of these should be Option<HashMap<String,HashSet<String>>>
     tags: HashMap<String,HashSet<String>>,
     words: HashMap<String,HashSet<String>>,
 }
@@ -20,16 +21,39 @@ struct Index {
 impl Index {
     fn from_file(path: &str) -> Index {
         let mut ind_file = OpenOptions::new().
-                           create_new(true).
+                           create(true).
                            read(true).
                            write(true).
                            open(path).
                            unwrap();
         let mut ind_str = String::new();
         ind_file.read_to_string(&mut ind_str).unwrap();
+        // if file was empty:
+        if ind_str.is_empty() {
+            ind_str = "tags = {}\nwords={}".to_string();
+        }
 
         toml::from_str(&ind_str).unwrap()
     }
+
+    fn to_file(&self, path: &str) {
+        let mut ind_file = OpenOptions::new().
+                            create(true).
+                            write(true).
+                            truncate(true).
+                            open(path).
+                            unwrap();
+        println!("Serializing index\n{:?}\n\n",&self);
+        let ind_ser = toml::to_string(&self).unwrap();
+        println!("Writing index");
+        match ind_file.write_all(&ind_ser.as_bytes()) {
+            Ok(_) => println!("\nWrote updated index to file {}",
+                               path.trim()),
+            Err(e) => println!("\nEncountered an error: {:?}", e)
+        }
+    }
+
+    // fn update(&self,tags:Vec<,words,label)
 }
 
 #[derive(Debug,Serialize)]
@@ -47,6 +71,28 @@ impl Entry {
             content: c
         }
     }
+
+    fn to_file(&self, path: &str) {
+        let mut entry_file = OpenOptions::new().
+                            create_new(true).
+                            write(true).
+                            open(path).
+                            unwrap();
+
+        let entry_ser = toml::to_string(&self).unwrap();
+
+        match entry_file.write_all(&entry_ser.as_bytes()) {
+            Ok(_) => println!("\nWrote entry to file {}",path),
+            Err(e) => println!("\nEncountered an error: {:?}", e)
+        }
+    }
+}
+
+fn extract(e: &str) -> Vec<String> {
+    let mut vocab = e.split_whitespace().map(|s| s.trim().to_string()).collect::<Vec<String>>();
+    vocab.sort();
+    vocab.dedup();
+    vocab
 }
 
 fn write_new(journal_dir: &str) {
@@ -55,11 +101,11 @@ fn write_new(journal_dir: &str) {
     println!("{}", timestamp);
     println!("------------------------");
 
-    let mut entry_file = OpenOptions::new().
-                        create_new(true).
-                        write(true).
-                        open(format!("{}/{}.toml",journal_dir.trim(),timestamp)).
-                        unwrap();
+    // let mut entry_file = OpenOptions::new().
+    //                     create_new(true).
+    //                     write(true).
+    //                     open(format!("{}/{}.toml",journal_dir.trim(),timestamp)).
+    //                     unwrap();
 
     loop {
         let mut buffer = String::new();
@@ -81,22 +127,32 @@ fn write_new(journal_dir: &str) {
         Ok(_) => (),
         Err(e) => println!("{:?}", e)
     }
-
-    let mut index = Index::from_file(&format!("{}/{}.toml",journal_dir.trim(),timestamp));
+    let mut index = Index::from_file(&format!("{}/.index.toml",journal_dir.trim()));
     for tag in tags.split(',') {
-        let tagged = index.tags.entry(tag.to_string()).or_insert(HashSet::new());
+        let tagged = index.tags.entry(tag.trim().to_string()).or_insert(HashSet::new());
         (*tagged).insert(timestamp.clone());
+    }
+
+    let vocab = extract(&inputs);
+
+    for word in vocab {
+        let instances = index.words.entry(word).or_insert(HashSet::new());
+        (*instances).insert(timestamp.clone());
     }
 
     let entry = Entry::new(timestamp,tags, inputs);
 
-    let entry_ser = toml::to_string(&entry).unwrap();
-
-    match entry_file.write_all(&entry_ser.as_bytes()) {
-        Ok(_) => println!("\nWrote entry to file {}",
-                           format!("{}/{}",journal_dir.trim(),entry.timestamp)),
-        Err(e) => println!("\nEncountered an error: {:?}", e)
-    }
+    // let entry_ser = toml::to_string(&entry).unwrap();
+    //
+    // match entry_file.write_all(&entry_ser.as_bytes()) {
+    //     Ok(_) => println!("\nWrote entry to file {}",
+    //                        format!("{}/{}",journal_dir.trim(),entry.timestamp)),
+    //     Err(e) => println!("\nEncountered an error: {:?}", e)
+    // }
+    println!("Attempting to write entry now");
+    entry.to_file(&format!("{}/{}",journal_dir.trim(),entry.timestamp));
+    println!("Attempting to write index now");
+    index.to_file(&format!("{}/.index.toml",journal_dir.trim()));
 }
 
 fn list_entries(journal_dir: &str) {
