@@ -13,7 +13,6 @@ use time::now_utc;
 
 #[derive(Debug,Serialize,Deserialize)]
 struct Index {
-    // both of these should be Option<HashMap<String,HashSet<String>>>
     tags: HashMap<String,HashSet<String>>,
     words: HashMap<String,HashSet<String>>,
 }
@@ -43,9 +42,8 @@ impl Index {
                             truncate(true).
                             open(path).
                             unwrap();
-        println!("Serializing index\n{:?}\n\n",&self);
+
         let ind_ser = toml::to_string(&self).unwrap();
-        println!("Writing index");
         match ind_file.write_all(&ind_ser.as_bytes()) {
             Ok(_) => println!("\nWrote updated index to file {}",
                                path.trim()),
@@ -53,7 +51,17 @@ impl Index {
         }
     }
 
-    // fn update(&self,tags:Vec<,words,label)
+    fn update(&mut self,tags: &str, words: &str, label: &str) {
+        for tag in tags.split(',') {
+            let tagged = self.tags.entry(tag.trim().to_string()).or_insert(HashSet::new());
+            (*tagged).insert(label.to_string());
+        }
+
+        for word in extract(words) {
+            let instances = self.words.entry(word).or_insert(HashSet::new());
+            (*instances).insert(label.to_string());
+        }
+    }
 }
 
 #[derive(Debug,Serialize)]
@@ -101,12 +109,6 @@ fn write_new(journal_dir: &str) {
     println!("{}", timestamp);
     println!("------------------------");
 
-    // let mut entry_file = OpenOptions::new().
-    //                     create_new(true).
-    //                     write(true).
-    //                     open(format!("{}/{}.toml",journal_dir.trim(),timestamp)).
-    //                     unwrap();
-
     loop {
         let mut buffer = String::new();
         match stdin().read_line(&mut buffer) {
@@ -128,30 +130,12 @@ fn write_new(journal_dir: &str) {
         Err(e) => println!("{:?}", e)
     }
     let mut index = Index::from_file(&format!("{}/.index.toml",journal_dir.trim()));
-    for tag in tags.split(',') {
-        let tagged = index.tags.entry(tag.trim().to_string()).or_insert(HashSet::new());
-        (*tagged).insert(timestamp.clone());
-    }
 
-    let vocab = extract(&inputs);
-
-    for word in vocab {
-        let instances = index.words.entry(word).or_insert(HashSet::new());
-        (*instances).insert(timestamp.clone());
-    }
+    index.update(&tags, &inputs, &timestamp);
 
     let entry = Entry::new(timestamp,tags, inputs);
 
-    // let entry_ser = toml::to_string(&entry).unwrap();
-    //
-    // match entry_file.write_all(&entry_ser.as_bytes()) {
-    //     Ok(_) => println!("\nWrote entry to file {}",
-    //                        format!("{}/{}",journal_dir.trim(),entry.timestamp)),
-    //     Err(e) => println!("\nEncountered an error: {:?}", e)
-    // }
-    println!("Attempting to write entry now");
     entry.to_file(&format!("{}/{}",journal_dir.trim(),entry.timestamp));
-    println!("Attempting to write index now");
     index.to_file(&format!("{}/.index.toml",journal_dir.trim()));
 }
 
