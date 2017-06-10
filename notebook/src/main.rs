@@ -140,10 +140,47 @@ fn write_new(journal_dir: &str) {
 }
 
 fn list_entries(journal_dir: &str) {
+    let ind_path = format!("{}/.index.toml",journal_dir);
     println!("The following entries exist:");
     let es = read_dir(journal_dir).unwrap();
-    for e in es {
-        println!("{:?}", e.unwrap().path());
+    for e in es.map(|p| p.unwrap().path()) {
+        if e.to_str().unwrap() != ind_path.trim() {
+            println!("{:?}", e);
+        }
+    }
+}
+
+fn search_index(journal_dir: &str) {
+    let mut term_str = String::new();
+    let mut tag_str = String::new();
+
+    println!("Search terms (comma-separated):");
+
+    let _ = stdin().read_line(&mut term_str).unwrap();
+    let terms: Vec<&str> = term_str.split(',').map(|s| s.trim()).collect();
+
+    println!("Search tags (comma-separated):");
+
+    let _ = stdin().read_line(&mut tag_str).unwrap();
+    let tags: Vec<&str> = tag_str.split(',').map(|s| s.trim()).collect();
+
+    let mut hits = HashSet::new();
+    let index = Index::from_file(&format!("{}/.index.toml",journal_dir.trim()));
+    for term in terms {
+        match index.words.get(term) {
+            Some(val) => for v in val.clone() {hits.insert(v);},
+            None      => ()
+        }
+    }
+    for term in tags {
+        match index.words.get(term) {
+            Some(val) => for v in val.clone() {hits.insert(v);},
+            None      => ()
+        }
+    }
+    println!("Found the following hits:");
+    for entry in hits {
+        println!("{}",entry);
     }
 }
 
@@ -153,6 +190,7 @@ fn main() {
         match &*s {
             "--new" => write_new(&inputs.nth(0).unwrap().trim()),
             "--list" => list_entries(&inputs.nth(0).unwrap().trim()),
+            "--search" => search_index(&inputs.nth(0).unwrap().trim()),
             _ => println!("Please specify a valid mode.\nThese include:\n--new\n--list")
         }
     }
