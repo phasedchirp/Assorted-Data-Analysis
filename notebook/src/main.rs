@@ -181,7 +181,7 @@ fn search_index(journal_dir: &str, terms: Option<String>) {
         }
     }
     for term in tags {
-        match index.words.get(&term) {
+        match index.tags.get(&term) {
             Some(val) => for v in val.clone() {hits.insert(v);},
             None      => ()
         }
