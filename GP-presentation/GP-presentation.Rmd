@@ -6,6 +6,7 @@ output: ioslides_presentation
 runtime: shiny
 ---
 
+
 ```{r,echo=FALSE,eval=TRUE}
 set.seed(12345)
 library(ggplot2)
@@ -51,6 +52,12 @@ plotGP <- function(xRange,obs=c(),l,sigma,noise=0,samples=TRUE){
   }
 }
 
+```
+
+## A test
+
+```{python}
+print("Hello World!")
 ```
 
 ## A quick introduction to Gaussian Process models

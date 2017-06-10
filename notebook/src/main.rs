@@ -150,38 +150,52 @@ fn list_entries(journal_dir: &str) {
     }
 }
 
-fn search_index(journal_dir: &str) {
-    let mut term_str = String::new();
-    let mut tag_str = String::new();
+fn search_index(journal_dir: &str, terms: Option<String>) {
+    let (terms,tags): (Vec<String>,Vec<String>) = match terms {
+        Some(_) => (Vec::new(),Vec::new()),
+        None => {
+            let mut term_str = String::new();
+            let mut tag_str = String::new();
 
-    println!("Search terms (comma-separated):");
+            println!("Search terms (comma-separated):");
 
-    let _ = stdin().read_line(&mut term_str).unwrap();
-    let terms: Vec<&str> = term_str.split(',').map(|s| s.trim()).collect();
+            let _ = stdin().read_line(&mut term_str).unwrap();
 
-    println!("Search tags (comma-separated):");
+            println!("Search tags (comma-separated):");
 
-    let _ = stdin().read_line(&mut tag_str).unwrap();
-    let tags: Vec<&str> = tag_str.split(',').map(|s| s.trim()).collect();
+            let _ = stdin().read_line(&mut tag_str).unwrap();
+
+
+            (term_str.split(',').map(|s| s.trim().to_string()).collect(),
+             tag_str.split(',').map(|s| s.trim().to_string()).collect())
+        }
+    };
+
 
     let mut hits = HashSet::new();
     let index = Index::from_file(&format!("{}/.index.toml",journal_dir.trim()));
     for term in terms {
-        match index.words.get(term) {
+        match index.words.get(&term) {
             Some(val) => for v in val.clone() {hits.insert(v);},
             None      => ()
         }
     }
     for term in tags {
-        match index.words.get(term) {
+        match index.words.get(&term) {
             Some(val) => for v in val.clone() {hits.insert(v);},
             None      => ()
         }
     }
-    println!("Found the following hits:");
-    for entry in hits {
-        println!("{}",entry);
+
+    if hits.len() > 0 {
+        println!("Found the following hits:");
+        for entry in hits {
+            println!("{}",entry);
+        }
+    } else {
+        println!("No entries contained those search terms");
     }
+
 }
 
 fn main() {
@@ -190,7 +204,7 @@ fn main() {
         match &*s {
             "--new" => write_new(&inputs.nth(0).unwrap().trim()),
             "--list" => list_entries(&inputs.nth(0).unwrap().trim()),
-            "--search" => search_index(&inputs.nth(0).unwrap().trim()),
+            "--search" => search_index(&inputs.nth(0).unwrap().trim(),None),
             _ => println!("Please specify a valid mode.\nThese include:\n--new\n--list")
         }
     }
