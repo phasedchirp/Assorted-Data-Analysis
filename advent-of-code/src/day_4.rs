@@ -3,6 +3,18 @@ use std::collections::HashSet;
 fn part_1(input: &str) -> bool {
     let mut words = HashSet::new();
     for word in input.split_whitespace() {
+        if words.insert(word){
+            ();
+        } else {
+            return false;
+        };
+    }
+    true && input.split_whitespace().count() > 1
+}
+
+fn part_2(input: &str) -> bool {
+    let mut words = HashSet::new();
+    for word in input.split_whitespace() {
         let mut word_ = word.chars().collect::<Vec<char>>();
         word_.sort();
         if words.insert(word_){
@@ -534,14 +546,14 @@ fn main() {
     assert!(part_1("aa bb cc dd aa") == false);
     assert!(part_1("aa bb cc dd aaa") == true);
     assert!(part_1("aa") == false);
-    assert!(part_1("abcde fghij") == true);
-    assert!(part_1("abcde xyz ecdab") == false);
-    assert!(part_1("a ab abc abd abf abj") == true);
-    assert!(part_1("iiii oiii ooii oooi oooo") == true);
-    assert!(part_1("oiii ioii iioi iiio") == false);
+    assert!(part_2("abcde fghij") == true);
+    assert!(part_2("abcde xyz ecdab") == false);
+    assert!(part_2("a ab abc abd abf abj") == true);
+    assert!(part_2("iiii oiii ooii oooi oooo") == true);
+    assert!(part_2("oiii ioii iioi iiio") == false);
     let val = input.lines()
         .fold(0, |acc, x| {
-            match part_1(x) {
+            match part_2(x) {
                 true => acc + 1,
                 false => acc
             }
