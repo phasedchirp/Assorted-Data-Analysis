@@ -8,25 +8,153 @@ runtime: shiny
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE,message = FALSE)
+source("utils.R")
 ```
 
 # Motivation
 
+
+##
+As usual in regression, we have data where our dependent variable $y$ can be viewed as samples from some unknown function $f$ of our independent variable(s) $x$. Specifically:
+
+- Our goal is to find $\hat{f}$ that is compatible with our data so we can estimate $\hat{y} = \hat{f}(x)$ for new $x$-values
+- But we don't know an appropriate parametric form for the function (e.g. linear, polynomial) and don't want to make an arbitrary choice here.
+- So, we want to do our inference over some very large and flexible space of functions rather than some nice friendly set of functions.
+- We'd also maybe get some good estimates of uncertainty?
+
+## Gaussian Processes
+
+Gaussian processes are distributions over functions which let us do the kind of arbitrary function approximation we want. Relevant properties include:
+
+- Extremely flexible
+- Useful ways to estimate uncertainty
+- Workable with very small data sets, unlike Deep Learning-style arbitrary function approximation.
+
+## Overview
+
+1. A detour through parametric models
+2. Definition of a Gaussian Process
+3. Real-data example
+4. Some other related stuff
+
+
 # Parametric models
+
+## Parametric models
+
 
 ## Linear Models
 
+As a starting point, we often like to just assume our function $y=f(x)$ is a linear function, with the form
+
+$$ f(x) = x^Tw $$
+
+
+where the weight vector $w$ is the parameter to be learned. Observations are then
+
+$$y = x^Tw + \epsilon$$
+
+where $\epsilon$ is $\mathcal{N}(0,\sigma)$ noise).
+
+##
+
+These have a lot of nice properties:
+
+- Easy to estimate
+- Interpretable (sometimes)
+- In a technical sense they're the least-worst estimator (just maybe not really in a useful sense?)
+
+Even though the assumptions are almost always wrong, they work surprisingly well more often than if feels like they should.
+
 ## Sometimes they work
+
+
+```{r,echo=FALSE}
+
+x <- runif(10,-5,5)
+y <- 3*x-2 + rnorm(10,0,2)
+
+ggplot(data.frame(x=x,y=y),aes(x=x,y=y)) +
+  geom_point()+geom_smooth(method = "lm",se=TRUE)+
+  xlab("x") + ylab("f(x)")+
+  theme_bw()
+
+```
 
 ## Sometimes they don't
 
+Sometimes a linear function of the input fails to capture details we're interested in:
+
+```{r, echo = FALSE}
+
+x <- runif(15,-5,5)
+y <- -2+x-5*x^2+0.5*x^3 + rnorm(15,0,2)
+
+ggplot(data.frame(x=x,y=y),aes(x=x,y=y)) +
+  geom_point()+geom_smooth(method = "lm",se=TRUE)+
+  xlab("x") + ylab("f(x)")+
+  theme_bw()
+
+```
+
 ## Basis expansion
 
-## Polynomial bases
+If a regular linear model doesn't work, we can model non-linear functions of the data using the following procedure:
 
-## Periodic bases
+1. Find a function $phi(x)$ that transforms the data into some useful set of features
+2. Fit a linear model to the output of that function:
+
+$$ f(x) = \phi(x)^Tw$$
+
+While it's a non-linear function of the data, it's a linear function of $w$ (what we're trying to estimate) so we keep the computational advantages of a regular linear model.
+
+## Some examples of basis expansion
+
+- Polynomials -- features are $x$, $x^2$,... $x^n$
+- Periodic functions -- features are periodic functions like $sin(x)$, $cos(x)$ with varying frequency and phase (useful for seasonal data)
+- Smooth functions like splines
+- Weird things like radial basis functions
+
+## Polynomials
+
+
+Regression with $\phi(x)= [x^0, x, x^2, x^3]$ (oversimplifying a bit)
+
+```{r,echo=FALSE}
+
+# x <- runif(10,-5,5)
+# y <- -2+x-5*x^2+0.5*x^3 + rnorm(10,0,2)
+
+ggplot(data.frame(x=x,y=y),aes(x=x,y=y)) +
+  geom_point()+geom_smooth(method = "lm",formula = y~poly(x,3),se=TRUE)+
+  xlab("x") + ylab("f(x)")+
+  theme_bw()
+
+```
+
+## Sine and cosine
+
+$\phi(x) = [1, sin(\pi x),cos(10\pi x)]$
+
+```{r,echo=FALSE}
+
+x <- runif(500,-5,5)
+y <- sin(pi*x) + 0.1*cos(10*pi*x) + rnorm(10,0,0.25)
+
+ggplot(data.frame(x=x,y=y),aes(x=x,y=y)) +
+  geom_point()+ geom_smooth(method = "lm",formula = y~sin(pi*x)+cos(10*pi*x), se=TRUE)+
+  xlab("x") + ylab("f(x)")+
+  theme_bw()
+
+```
 
 ## Smooth functions
+
+For the previous examples, we make specific choices about which basis functions to include. Sometimes we don't actually have prior knowledge to inform these choices and want something more flexible. Splines are one of the most common options:
+
+- Constructed by gluing together piecewise continuous functions
+    * Order 1 splines are piece-wise constant, order 2 linear, order 3 quadratic, etc
+- Higher-order splines are differentiable if we want things like velocity and acceleration
 
 ## Weirder things
 

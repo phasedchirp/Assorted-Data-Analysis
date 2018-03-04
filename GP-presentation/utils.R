@@ -3,7 +3,7 @@ library(ggplot2)
 library(MASS)
 library(dplyr)
 library(reshape2)
-library(fda)
+# library(fda)
 
 SE <- function(Xi,Xj, l=1, s=1) (s^2)*exp(-(Xi - Xj)^2 / l ^ 2)
 cov <- function(X, Y, l=1, s=1) outer(X, Y, SE, l, s)
@@ -34,7 +34,7 @@ plotGP <- function(xRange,obs=c(),l,sigma,noise=0,samples=TRUE){
     # Actual plotting bits:
     fakeData = data.frame(x=x_predict,y=Ef,lower=(Ef-2*sigma*sqrt(diag(Cf))),upper=(Ef+2*sigma*sqrt(diag(Cf))))
     ggplot(dat,aes(x=x,y=value)) +
-      geom_ribbon(data=fakeData, aes(y=y,ymin=lower, ymax=upper), fill="grey80") +
+      geom_ribbon(data=fakeData, aes(y=value,ymin=lower, ymax=upper), fill="grey80") +
       geom_line(aes(group=variable,color=variable)) + #REPLICATES
       geom_line(data=fakeData,aes(x=x,y=y), size=1) + #MEAN
       geom_point(data=obs,aes(x=x,y=y),size=2,shape=21) +  #OBSERVED DATA
