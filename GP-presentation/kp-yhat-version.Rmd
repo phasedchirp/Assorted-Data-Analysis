@@ -1,0 +1,77 @@
+---
+title: "A very short introduction to Gaussian Process models"
+author: "Sean Martin"
+date: "March 5, 2018"
+output: ioslides_presentation
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,message = FALSE)
+```
+
+# Motivation
+
+# Parametric models
+
+## Linear Models
+
+## Sometimes they work
+
+## Sometimes they don't
+
+## Basis expansion
+
+## Polynomial bases
+
+## Periodic bases
+
+## Smooth functions
+
+## Weirder things
+
+## Radial basis functions
+
+# Non-parametric models (sort of)
+
+## The Kernel Trick
+
+## Function spaces
+
+# Gaussian Processes
+
+## What are they?
+
+## Distributions over functions
+
+## Generalizing the multivariate gaussian distribution
+
+# Practical stuff
+
+## Working definition
+
+## Mean functions
+
+## Covariance functions
+
+## Kernels and kernel parameters
+
+## Inference
+
+# Real-world examples
+
+## Use-cases
+
+## Running example 1
+
+## Running example 2
+
+## Running example N
+
+# Other cool stuff
+
+## Further reading
+
+## Generalizations
+
+# Thank You!
