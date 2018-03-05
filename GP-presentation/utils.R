@@ -1,9 +1,20 @@
+set.seed(2718282)
+len <- 20
+t <- cumsum(runif(len,1,5))
+y <- rep(0,len)
+y[1] <- rnorm(1,589,5)
+for(i in 2:len){
+  y[i] <- y[i-1] + (t[i] - t[i-1])*rnorm(1,-8.74,4)
+}
+
+demo_series <- data.frame(time=t,observation=y)
+
 set.seed(12345)
 library(ggplot2)
 library(MASS)
 library(dplyr)
 library(reshape2)
-# library(fda)
+library(fda)
 
 SE <- function(Xi,Xj, l=1, s=1) (s^2)*exp(-(Xi - Xj)^2 / l ^ 2)
 cov <- function(X, Y, l=1, s=1) outer(X, Y, SE, l, s)
@@ -43,3 +54,4 @@ plotGP <- function(xRange,obs=c(),l,sigma,noise=0,samples=TRUE){
       theme_bw()+theme(legend.position="none")
   }
 }
+

@@ -15,19 +15,25 @@ source("utils.R")
 
 
 ##
-As usual in regression, we have data where our dependent variable $y$ can be viewed as samples from some unknown function $f$ of our independent variable(s) $x$. Specifically:
 
-- Our goal is to find $\hat{f}$ that is compatible with our data so we can estimate $\hat{y} = \hat{f}(x)$ for new $x$-values
-- But we don't know an appropriate parametric form for the function (e.g. linear, polynomial) and don't want to make an arbitrary choice here.
+Basic problem:
+
+- We have data where our dependent variable $y$ can be viewed as samples from some unknown function $f$ of our independent variable(s) $x$.
+
+Goals:
+
+- Our goal is to find $\hat{f}$ that is compatible with our data
+- We don't know an appropriate parametric form for the function
+- We don't want to make an arbitrary choice .
 - So, we want to do our inference over some very large and flexible space of functions rather than some nice friendly set of functions.
-- We'd also maybe get some good estimates of uncertainty?
+- We'd also maybe like to get some good estimates of uncertainty?
 
 ## Gaussian Processes
 
 Gaussian processes are distributions over functions which let us do the kind of arbitrary function approximation we want. Relevant properties include:
 
 - Extremely flexible
-- Useful ways to estimate uncertainty
+- Useful/principled ways to estimate uncertainty
 - Workable with very small data sets, unlike Deep Learning-style arbitrary function approximation.
 
 ## Overview
@@ -40,8 +46,17 @@ Gaussian processes are distributions over functions which let us do the kind of 
 
 # Parametric models
 
-## Parametric models
+## Parametric vs. Non-parametric models
+Parametric models are the set of mathematical models of our data which can be specified by some fixed, finite (and usually small) number of parameters. For example:
 
+- A normal distribution (Mean + variance)
+- Linear models (Weights/coefficients, error variance)
+
+In contrast, non-parametric models of the type we'll be getting to here have non-finite numbers of parameters which grow as the number of observations grows. For example:
+
+- Kernel density estimators
+- Support vector machines with kernel functions
+- Gaussian Processes
 
 ## Linear Models
 
@@ -62,7 +77,7 @@ These have a lot of nice properties:
 
 - Easy to estimate
 - Interpretable (sometimes)
-- In a technical sense they're the least-worst estimator (just maybe not really in a useful sense?)
+- In a technical sense they're the least-worst linear estimator when all of your assumptions are wrong and things are terrible (Shalizi, 2017)
 
 Even though the assumptions are almost always wrong, they work surprisingly well more often than if feels like they should.
 
@@ -148,17 +163,73 @@ ggplot(data.frame(x=x,y=y),aes(x=x,y=y)) +
 
 ```
 
-## Smooth functions
-
-For the previous examples, we make specific choices about which basis functions to include. Sometimes we don't actually have prior knowledge to inform these choices and want something more flexible. Splines are one of the most common options:
-
-- Constructed by gluing together piecewise continuous functions
-    * Order 1 splines are piece-wise constant, order 2 linear, order 3 quadratic, etc
-- Higher-order splines are differentiable if we want things like velocity and acceleration
-
-## Weirder things
 
 ## Radial basis functions
+
+Regression with radial basis functions provides a sort of intermediate step between linear models and what we'll be seeing with GPs.
+
+- The features for regression with RBFs are the similarities of the observations to a fixed set of points.
+- Similarity is calculated as $exp\left(-\frac{(x-c_i)^2}{2\sigma^2}\right)$
+    * $c$ is the center-point of the function
+    * $\sigma$ is the bandwidth of the function (how quickly similarity falls off with distance)
+
+
+## Fit 1
+A set of radial basis functions with bandwidth 1 centered at -2, 0, and 2
+```{r,echo=FALSE}
+rbf <- function(x,c,s) {exp(-(x-c)^2/(2*s^2))}
+inputs <- expand.grid(x=seq(-5,5,0.1),c=c(-2,0,2),s=1) %>% mutate(y = rbf(x,c,s))
+ggplot(inputs,aes(x=x,y=y,color=as.factor(c))) + geom_line() + theme_bw()
+
+```
+
+## Fit 1
+
+$phi(x) = \left[exp\left(-\frac{(x+2)^2}{2\sigma^2}\right), exp\left(-\frac{(x)^2}{2\sigma^2}\right),exp\left(-\frac{(x-2)^2}{2\sigma^2}\right)\right]$
+
+```{r,echo=FALSE}
+
+x <- runif(50,-5,5)
+y <- -2+x-5*x^2+0.5*x^3 + rnorm(10,0,2)
+
+# rbf <- function(x,c,s) {exp(-(x-c)^2/(2*s^2))}
+
+ggplot(data.frame(x=x,y=y),aes(x=x,y=y)) +
+  geom_point()+ geom_smooth(method = "lm",formula = y~rbf(x,-2,1)+rbf(x,0,1)+rbf(x,2,1), se=TRUE)+
+  xlab("x") + ylab("f(x)")+
+  theme_bw()
+
+```
+
+## Adjusting rbf parameters
+
+Centered around -3, -2, -1, 0, 1, 2, 3, with bandwidth 0.5
+
+```{r,echo=FALSE}
+inputs <- expand.grid(x=seq(-5,5,0.1),c=c(-3, -2, -1, 0, 1, 2, 3),s=0.5) %>% mutate(y = rbf(x,c,s))
+ggplot(inputs,aes(x=x,y=y,color=as.factor(c))) + geom_line() + theme_bw()
+
+```
+
+## Fitting the model
+
+Resulting fit is more wiggly
+
+```{r,echo=FALSE}
+
+x <- runif(50,-5,5)
+y <- -2+x-5*x^2+0.5*x^3 + rnorm(10,0,2)
+
+
+ggplot(data.frame(x=x,y=y),aes(x=x,y=y)) +
+  geom_point()+ geom_smooth(method = "lm",formula =
+                              y~rbf(x,-2,0.5)+ rbf(x,0,0.5)+ rbf(x,2,0.5)+ rbf(x,-1,0.5)+ rbf(x,1,0.5)+ rbf(x,-3,0.5) +rbf(x,3,0.5),
+                            se=TRUE)+
+  xlab("x") + ylab("f(x)")+
+  theme_bw()
+
+```
+
 
 # Non-parametric models (sort of)
 
@@ -170,36 +241,201 @@ For the previous examples, we make specific choices about which basis functions 
 
 ## What are they?
 
+A few ways of looking at GPs include:
+
+- Probability distributions over functions
+
+- An infinite-dimensional generalization of the Gaussian distrubution, parameterized by a mean and covariance functions rather than a fixed mean value and covariance matrix
+
 ## Distributions over functions
 
+When thinking of GPs as distributions over functions, it helps to remember that a function is *any* mapping between two sets $\mathcal{X}$ and $\mathcal{Y}$ that uniquely associates each item in $\mathcal{X}$ with a value in $\mathcal{Y}$.
+
+- This includes familiar parametric functions like $y = x + 1$
+- It also includes exhaustive and arbitrary listings of $(x,y)$ pairs
+
+If our set is finite, we can think of each function as a vector with indices being x-values and the values being corresponding y-values. This still works if our set $\mathcal{X}$ is infinitely large (e.g. real-valued indices like time), we just end up with an infinitely long vector.
+
 ## Generalizing the multivariate gaussian distribution
+
+
 
 # Practical stuff
 
 ## Working definition
 
+The infinite-dimensional Gaussian distribution definition is actually the easiest option to work with here (oversimplifying quite a bit):
+
+- We're only observing a finite subset of the dimensions
+- So we can marginalize out the unobserved data
+- The marginal distribution of a multivariate gaussian is still a gaussian
+- Having only a finite subset left, our model ends up being a finite-dimensional gaussian distribution
+
 ## Mean functions
+
+The mean function can be anything we want it to be. Our choice of mean function defines a *prior* mean before observing data. Some choices are:
+
+- $m(x)=0$ or some other constant: GPs are extremely flexible and this allows us to be non-commital about everything
+- *Parametric functions*: Useful if we have some prior knowledge about overall shape of trends in the data
+
+Choice of mean function can be useful in determining how the model extrapolates beyond the range of the data, but the following examples will use $m(x)=0$ for simplicity.
 
 ## Covariance functions
 
-## Kernels and kernel parameters
+A covariance function is some symmetric function that takes two points $x$ and $x'$ and returns the distance between them. The covariance matrix $C$ of our GP is then a symmetric (positive definite) matrix where $C_{ij}=k(x_i,x_j))$.
+
+Commonly used kernels include
+
+- Squared exponential (this looks very much like a radial basis function)
+- Matern (gives potentially more jagged functions than the squared exponential)
+- Periodic
+- Locally Periodic (periodicity decays with distance)
+
+Kernel functions can also be build by multiplying or adding together simpler functions to build up more complex functions.
+
+## Squared exponential kernel
+
+The examples below use a squared exponential kernel
+
+$$k(x,x') = \sigma^2*exp\left[ -\frac{(x-x')^2}{l^2}\right]$$
+
+This has the (hyper-) parameters $l$ which controls the length-scale (how quickly similarity between points falls off), and and $\sigma$ which determines the overall scale of changes in the function.
 
 ## Inference
 
-# Real-world examples
+Our goal is to make predictions for new values given our observations. For fixed values of the kernel parameters, inference for a GP has a closed-form solution. Starting from the joint distribution of observations and points to be predicted:
+
+$$\begin{bmatrix} f(x_{obs}) \\ f(x_{pred}) \end{bmatrix} \sim \mathcal{N}\left(0,\begin{bmatrix} K(x_{obs},x_{obs}) K(x_{obs},x_{pred}) \\ K(x_{pred},x_{obs}),K(x_{pred},x_{pred})\end{bmatrix}\right)$$
+
+##
+
+The conditional distribution $p(f(x_{pred})|x_{pred},x_{obs},f(x_{obs}))$ becomes
+
+$$p(f(x)_{post}|x_{pred},x_{obs},f(x_{obs})) = \mathcal{N}(m(x)_{post} ,C(x)_{post})$$
+
+where
+
+$$m(x)_{post} = m(x_{pred}) + K_{obs,pred}^TK_{obs,obs}^{-1}(f(x_{obs})-m(x_{obs}))$$
+
+and
+
+$$C(x)_{post} = K_{pred,pred} - K_{obs,pred}^TK_{obs,obs}^{-1}K_{obs,pred}$$
+
+
+Since this involves a matrix inversion, computational cost scales as $\mathcal{O}(N^3)$.
+
+# Examples
+
+## 1-dimensional example:
+```{r, echo=FALSE, eval=TRUE}
+
+inputPanel(
+    sliderInput("l", label="length-scale:", min=0.1, max=5, value=1, step=0.1),
+    selectInput("obs",label="observations", choices = c(FALSE,TRUE)),
+    sliderInput("sigma",label="sigma",min=0.1,max=3,step=0.1,value=1)
+)
+
+renderPlot({
+  if(input$obs){
+    observations = data.frame(x = c(-4, -3, -1,  0,  2), y = c(-2,  0,  1,  2, 3))
+    plotGP(xRange = c(-5,5),obs=observations,l=input$l,sigma=input$sigma)
+  } else {
+    plotGP(xRange = c(-5,5),l=input$l,sigma=input$sigma)
+  }
+})
+```
+
+## Measuring with noise
+
+The previous example assumed we were measuring with no noise (so the function has to pass through the observations). This isn't usually the case (and it can be nice to have a less constrained function) so noise can be added to the model (this is another tuneable hyperparameter). Form for predictions remains the same.
+
+$$k(x,x') = \sigma^2_f*exp\left[ -\frac{(x-x')^2}{l^2}\right] + \sigma^2_y\delta_{xx'}$$
+
+
+## 1-dimensional example with noise
+
+```{r, echo=FALSE, eval=TRUE}
+
+inputPanel(
+    sliderInput("l2", label="length-scale:", min=0.1, max=5, value=1, step=0.1),
+    sliderInput("sigma2",label="sigma",min=0.1,max=3,step=0.1,value=1),
+    sliderInput("noise",label="noise",min=0,max=3,value=0,step=0.1)
+)
+
+renderPlot({
+    observations = data.frame(x = c(-4, -3, -1,  0,  2), y = c(-2,  0,  1,  2, 3))
+    plotGP(xRange = c(-5,5),obs=observations,l=input$l2,sigma=input$sigma2,noise=input$noise)
+    })
+```
 
 ## Use-cases
 
-## Running example 1
+Some of the cases where we'd want to use something like these include:
 
-## Running example 2
+- Time-series data with unequally spaced observations
+- Cases where we're interested in spatial relationships
+- Not wanting to commit to choices of basis functions or knots
+- As components of more complex models like mixed-effects/hierarchical models where we have measurements that are correlated in time or space rather than discrete groups (e.g. the spatial covariance options in `PROC GLIMMIX`).
 
-## Running example N
+## Irregularly sample time-series data:
+
+As an example, we have (simulated) data from an irregularly sampled time-series:
+
+```{r,echo=FALSE}
+ggplot(demo_series,aes(x=time,y=observation)) + geom_point() + theme_bw() + labs(y="Observed value",x="Time (days)")
+```
+
+##
+
+Goals for this series:
+
+- Interpolate values between our observed time points
+- Predict future values
 
 # Other cool stuff
 
 ## Further reading
 
-## Generalizations
+- A more complex interactive demonstration: http://chifeng.scripts.mit.edu/stuff/gp-demo/
+
+#### Tutorials
+- [Michael Betancourt's tutorials](https://betanalpha.github.io/assets/case_studies/gp_part1/part1.html)
+- https://matthewdharris.com/2016/05/16/gaussian-process-hyperparameter-estimation/
+- https://matthewdharris.com/2016/04/27/gaussian-process-in-feature-space/
+
+#### Reference Books
+- [Gaussian Processes for Machine Learning]()
+- [Machine Learning: A Probabilistic Perspective]()
+
+#### More detailed real-world example, including generalizations for count data
+- [Hierarchical Gaussian Processes in Stan (case study with voting data)](https://github.com/stan-dev/stancon_talks/tree/master/2017/Contributed-Talks/08_trangucci)
+
+## Tools
+
+R packages:
+- `kernlab`
+- `mgcv`
+- `brms`
+
+Python:
+- `scikit-learn`
+- [`GPy`](https://github.com/sheffieldml/gpy)
+- [`GPFlow`](https://github.com/GPflow/GPflow)
+
+## Scalable inference
+
+Exact inference for GPs can be computationally expensive or effectively intractable for sufficiently large data sets/more complex models. A number of methods for more efficient inference exist.
+
+- Typically based on the approach of finding a good set of basis points, scaling with the size of this set rather than the size of the data.
+- Online learning methods also exist (these necessarily use something like the sparse approach as well)
+
+
+## Extensions:
+
+While the examples here had real-valued inputs, this isn't a requirement. Kernels of various sorts exist for structured inputs like images, strings, etc. There are also a number of extensions of GPS for other purposes:
+
+- GP-LVMs: PCA-like unsupervised learning of some latent variable projection of the data
+- Classification and count data models: These have roughly the same relationship as GLMs have to linear models, although they introduce some new complications to inference due to non-gaussian likelihood
+- Deep GPs: A deep learning approach which uses stacks of multiple GL-LVMs. This potentially performs well in comparatively sparse-data circumstances.
 
 # Thank You!
