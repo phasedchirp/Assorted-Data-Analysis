@@ -1,0 +1,6 @@
+[package]
+name = "word_svd"
+version = "0.1.0"
+authors = ["phasedchirp <phasedchirp2718@gmail.com>"]
+
+[dependencies]
