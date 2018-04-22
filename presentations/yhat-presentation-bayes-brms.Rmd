@@ -17,13 +17,41 @@ library(brms)
 ##  
 1. Goals and motivation
 2. Why Bayesian methods?
-3. 
+3. Bayesian regression using `brms`
 
-## Running example
+## Running example:
+
+As a running example, we'll be using the `epilepsy` dataset included with the `brms` package in R. This is a set of observations from 59 patients in a randomized trial for an anticonvulsant therapy.
+
+## Variables:
+
+* `Age`: age in years
+* `Base`: baseline seizure count
+* `Trt`: treatment (0/1)
+* `log_Age_c`: log age (centered)
+* `log_Base4_c`: log Base/4 (centered)
+* `Trt_c`: treatment (centered)
+* `visit`: session number (1-4)
+* `count`: seizure count between visits
+* `patient`: patient number
+* `obs`: unique identifier for each observation
+
+##
+
+```{r, echo=FALSE}
+epilepsy %>%
+  ggplot(aes(x=log1p(count),fill=Trt)) +
+  geom_density(alpha=0.5) +
+  theme_bw() +
+  labs(x="Log-count")
+```
 
 # What?
 
 ## Regression
+
+We will, as usual be attempting to predict an outcome of interest (`count`) from covariates. 
+For this purpose, we'll be looking at linear models and different approaches to statistical inference for those models
 
 ## Approaches to statistical inference  
 * Maximum Likelihood inference
@@ -46,7 +74,9 @@ which breaks down to:
 
 ## Methods not appearing in this talk
 
-
+* Maximum entropy methods
+* Mechanistic models
+* Assorted ad-hoc stuff
 
 # Why?
 
