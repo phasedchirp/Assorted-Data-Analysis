@@ -1,0 +1,130 @@
+---
+title: "Bayesian Regression with `brms`"
+author: "Sean Martin"
+date: "April 21, 2018"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(dplyr)
+library(brms)
+```
+
+# Overview
+
+##  
+1. Goals and motivation
+2. Why Bayesian methods?
+3. 
+
+## Running example
+
+# What?
+
+## Regression
+
+## Approaches to statistical inference  
+* Maximum Likelihood inference
+* Bayesian inference
+* Other stuff?
+
+## Maximum Likelihood
+
+## Bayesian approach
+
+## Obligatory slide on Bayes rule  
+
+$$p(\theta|\mathcal{D}) = \frac{p(\mathcal{D}|\theta)p(\theta)}{p(\mathcal{D})}$$
+
+which breaks down to:  
+* $p(\theta|\mathcal{D})$: the posterior distribution over parameters ($\theta$) given our data ($\mathcal{D}$)
+* $p(\mathcal{D}|\theta)$: The likelihood -- the probability of our data given the parameters
+* $p(\theta)$: the prior probability of our parameters before we see the data
+* $p(\mathcal{D})$: the evidence -- the probability of our data integrating over all possible sets of parameters
+
+## Methods not appearing in this talk
+
+
+
+# Why?
+
+## Quantifying Uncertainty
+
+Our general goal in statistics is to allow reasoning under uncertainty. A big advantage of bayesian methods is that they make explicit the assumptions we're making about this uncertainty. This means:
+
+* We're letting ourselves make probabilistic statements about parameters
+* We get some nice probabilistic statements about our predictions for free(-ish)
+* Confidence intervals mean something fairly intuitive
+
+## Point estimates vs. distributions
+
+* The results of a maximum likelihood estimator are a single point estimate.
+* While the point estimate may be the best estimate for some given definition of best, there are often nearly-as-good estimates available to us
+* Point estimates can be unstable depending on our data
+
+
+
+## Interpretability
+
+* A 95% confidence* interval in this context is a statement that we expect the parameter/prediction/function of our prediction to fall within these bounds with 95% probability (given our model)
+* 
+
+## Incorporating prior information
+
+## Brief note on updating models
+
+A lot of materials on Bayesian methods mention the cool way you can use Bayes rule to update your model given new information
+
+* For practical computations, this is limited to certain classes of model
+
+# How?
+
+## Obligatory slide on Bayes rule (again)
+
+$$p(\theta|\mathcal{D}) = \frac{p(\mathcal{D}|\theta)p(\theta)}{p(\mathcal{D})}$$
+
+which breaks down to:  
+* $p(\theta|\mathcal{D})$: the posterior distribution over parameters ($\theta$) given our data ($\mathcal{D}$)
+* $p(\mathcal{D}|\theta)$: The likelihood -- the probability of our data given the parameters
+* $p(\theta)$: the prior probability of our parameters before we see the data
+* $p(\mathcal{D})$: the evidence -- the probability of our data integrating over all possible sets of parameters
+
+## Calculus is hard
+
+* The numerator of Bayes rule is pretty straightforward, but the denominator involves a complicated and often intractable integral.
+* We solve this by using approximate inference methods. Here we'll be using Markov Chain Monte Carlo methods
+    - These methods take advantage of the fact that $p(\theta|\mathcal{D}) \propto p(\mathcal{D}|\theta)p(\theta)$ which lets us solve the whole thing by just drawing random samples and then doing arithmetic on the samples.
+
+##  
+You might also encounter:
+
+* Numerical integration
+* Variational approximations
+* The Integrated Nested Laplace Approximation (INLA)
+* Model-specific tools (e.g. Kalman filters)
+* Assorted ad-hoc things
+
+## Using `brms`  
+* User-friendly wrapper around the `stan` language
+* Supports a *very* wide range of models specified using R-style model formulas
+* Includes excellent tools for analyzing models
+* Is a good starting point even if you end up wanting to do something more complex
+
+## Basic model
+
+
+## Regularization
+
+By choosing an appropriate prior distribution for our parameters, we can get behavior (mostly) equivalent to regularization methods, but with well-calibrated confidence intervals
+
+* A gaussian prior is equivalent to ridge regression (l1 regularization)
+* A laplace prior is equivalent to lasso regularization
+* Horseshoe and spike-and-slab priors give sparse solutions like lasso but aim to not shrink the non-zero betas the same way lasso does
+
+## More complicated approaches  
+* Mixed models (and adaptive regularization)
+* Additive models ()
+* Measurement error models
+
