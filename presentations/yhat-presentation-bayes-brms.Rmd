@@ -10,6 +10,12 @@ knitr::opts_chunk$set(echo = FALSE)
 library(ggplot2)
 library(dplyr)
 library(brms)
+library(modelr)
+library(tidybayes)
+data("epilepsy")
+epilepsy = epilepsy %>%
+  mutate(log1p_count = log1p(count),
+         Trt = as.factor(Trt))
 ```
 
 # Overview
@@ -33,6 +39,7 @@ As a running example, we'll be using the `epilepsy` dataset included with the `b
 * `Trt_c`: treatment (centered)
 * `visit`: session number (1-4)
 * `count`: seizure count between visits
+* `log1p_count` log(count+1) (added)
 * `patient`: patient number
 * `obs`: unique identifier for each observation
 
@@ -40,7 +47,7 @@ As a running example, we'll be using the `epilepsy` dataset included with the `b
 
 ```{r, echo=FALSE}
 epilepsy %>%
-  ggplot(aes(x=log1p(count),fill=Trt)) +
+  ggplot(aes(x=log1p_count,fill=Trt)) +
   geom_density(alpha=0.5) +
   theme_bw() +
   labs(x="Log-count")
@@ -96,15 +103,23 @@ Our general goal in statistics is to allow reasoning under uncertainty. A big ad
 
 ## Point estimates vs. distributions
 
-As a quick example, ML vs Bayes for the (not great) model `log(count + 1) ~ Age`
+As a quick example, ML vs Bayes for the (not great) model `log(count + 1) ~ Age*Trt`
 
 ```{r,echo=FALSE}
 # ML fit
-fit_ml = lm(log1p(count) ~ Age, data=epilepsy)
+fit_ml = lm(log1p(count) ~ Trt, data=epilepsy)
 # Bayes fit
-fit_bayes = brm(log1p(count) ~ Age)
+fit_bayes = brm(log1p_count ~ Age*Trt, data = epilepsy)
 
 # Plots
+
+epilepsy %>%
+  group_by(Trt) %>%
+  data_grid(Age = seq_range(Age, n = 101)) %>%
+  add_fitted_samples(fit_bayes,n=100) %>%
+  ggplot(aes(x = Age, y = log1p_count, color = Trt)) +
+  geom_line(aes(y = estimate, group = paste(Trt, .iteration)), alpha = 0.25)
+
 ```
 
 ## Interpretability

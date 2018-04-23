@@ -52,7 +52,7 @@ Parametric models are the set of mathematical models of our data which can be sp
 - A normal distribution (Mean + variance)
 - Linear models (Weights/coefficients, error variance)
 
-In contrast, non-parametric models of the type we'll be getting to here have non-finite numbers of parameters which grow as the number of observations grows. For example:
+In contrast, non-parametric models of the type we'll be getting to here have non-fixed numbers of parameters which grow as the number of observations grows. For example:
 
 - Kernel density estimators
 - Support vector machines with kernel functions
@@ -231,21 +231,19 @@ ggplot(data.frame(x=x,y=y),aes(x=x,y=y)) +
 ```
 
 
-# Non-parametric models (sort of)
-
-## The Kernel Trick
-
-## Function spaces
-
 # Gaussian Processes
 
 ## What are they?
 
-A few ways of looking at GPs include:
+The first way we're going to look at gaussian processes is as a probability distribution over functions
 
-- Probability distributions over functions
+- Following our goals described earlier, we're trying to find the distribution $p(f|Data)$
+- So, we want an easy-to-work-with family of distributions that we can fit to our data
 
-- An infinite-dimensional generalization of the Gaussian distrubution, parameterized by a mean and covariance functions rather than a fixed mean value and covariance matrix
+## Random samples from a GP
+```{r,echo=FALSE,fig.height=4}
+plotGP(xRange = c(-5,5),l=1,sigma=1)+ggtitle("Samples from a Gaussian Process prior")
+```
 
 ## Distributions over functions
 
@@ -256,15 +254,15 @@ When thinking of GPs as distributions over functions, it helps to remember that 
 
 If our set is finite, we can think of each function as a vector with indices being x-values and the values being corresponding y-values. This still works if our set $\mathcal{X}$ is infinitely large (e.g. real-valued indices like time), we just end up with an infinitely long vector.
 
+- So, is there a convenient distribution over vectors of infinite length?
+
 ## Generalizing the multivariate gaussian distribution
 
+Gaussian processes approach this by generalizing the multivariate Gaussian/Normal distribution to infinite dimensional vectors. These have mean and covariance functions rather than a fixed mean value and covariance matrix
 
+## Infinite-dimensional?
 
-# Practical stuff
-
-## Working definition
-
-The infinite-dimensional Gaussian distribution definition is actually the easiest option to work with here (oversimplifying quite a bit):
+Oversimplifying a bit, the reason we can work with an infinite-dimensional distribution:
 
 - We're only observing a finite subset of the dimensions
 - So we can marginalize out the unobserved data
@@ -326,7 +324,7 @@ Since this involves a matrix inversion, computational cost scales as $\mathcal{O
 
 # Examples
 
-## 1-dimensional example:
+## 1-dimensional example
 ```{r, echo=FALSE, eval=TRUE}
 
 inputPanel(
@@ -368,7 +366,19 @@ renderPlot({
     })
 ```
 
-## Use-cases
+# Inference for kernel parameters
+
+## Kernel parameters
+
+We might have some set of kernel parameters that make sense for theoretical reasons, but it's also useful to be able to derive the best parameters from our data.
+
+- Best here meaning maximizing some objective function or minimizing some loss function (e.g. maximizing $p(\mathcal{D} | \theta)$ in the case of maximum likelihood)
+- Alternatively can consider the entire posterior distribution $p(\theta | \mathcal{D})$ over parameters in the case of Bayesian inference.
+
+
+# Use-cases
+
+##
 
 Some of the cases where we'd want to use something like these include:
 
@@ -377,12 +387,18 @@ Some of the cases where we'd want to use something like these include:
 - Not wanting to commit to choices of basis functions or knots
 - As components of more complex models like mixed-effects/hierarchical models where we have measurements that are correlated in time or space rather than discrete groups (e.g. the spatial covariance options in `PROC GLIMMIX`).
 
+# Example
+
 ## Irregularly sample time-series data:
 
 As an example, we have (simulated) data from an irregularly sampled time-series:
 
+```{r,echo=FALSE,message=FALSE,results='hide'}
+set.seed(132465)
+dat <- mgcv::gamSim(1, n = 30, scale = 2,verbose=FALSE) #%>% select(y,x2)
+```
 ```{r,echo=FALSE}
-ggplot(demo_series,aes(x=time,y=observation)) + geom_point() + theme_bw() + labs(y="Observed value",x="Time (days)")
+ggplot(dat,aes(x=dat$x2,y=dat$y)) + geom_point() + theme_bw() + labs(y="Observed value",x="Time")
 ```
 
 ##
@@ -391,6 +407,33 @@ Goals for this series:
 
 - Interpolate values between our observed time points
 - Predict future values
+
+## Maximum Likelihood
+Using Kernlab (just fitting length-scale)
+
+```{r,echo=TRUE,message=FALSE}
+library(kernlab)
+test_ml = gausspr(x=dat$x2,y=dat$y)
+```
+
+##
+```{R,echo=FALSE}
+dat$ml_pred = predict(test_ml,dat$x1)
+ggplot(dat,aes(x=x2,y=y))+geom_point()+geom_line(aes(y=ml_pred),color="blue")+theme_bw()+labs(y="Observed value",x="Time")
+```
+
+## Bayesian inference
+
+Using `brms` to do Bayesian inference over all kernel parameters
+```{r,echo=FALSE,message=FALSE}
+library(brms)
+# load("yhat.RData")
+fit1 <- brm(y ~ gp(x2), dat, chains = 4)
+# summary(fit1)
+me1 <- marginal_effects(fit1, nsamples = 200, spaghetti = TRUE)
+plot(me1, ask = FALSE, points = TRUE)
+
+```
 
 # Other cool stuff
 
@@ -407,6 +450,7 @@ Goals for this series:
 - [Gaussian Processes for Machine Learning]()
 - [Machine Learning: A Probabilistic Perspective]()
 
+##
 #### More detailed real-world example, including generalizations for count data
 - [Hierarchical Gaussian Processes in Stan (case study with voting data)](https://github.com/stan-dev/stancon_talks/tree/master/2017/Contributed-Talks/08_trangucci)
 
