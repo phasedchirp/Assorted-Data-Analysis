@@ -57,3 +57,5 @@ docs/_build/
 target/
 
 aoc2017-code
+
+presentations/yhat-presentations-bayes-brms_files/*
